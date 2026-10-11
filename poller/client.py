@@ -88,7 +88,7 @@ class VehicleData:
     mirror_heat_right: int = 0      # signal 50 rightMirrorHeating
     ready: bool = False             # signal 1258 bcmKeyPositionOn3 — faithful READY/ON3 (physical key only)
     ready_reported: bool = True     # whether the frame carried 1258; if not: ready False, `positions` NULL
-    charge_completed: bool = False  # signal 3736 chargeCompleted — true at full charge (validate on a real charge)
+    charge_completed: bool = False  # signal 3736 chargeCompleted — not a full-charge flag, see _parse_signal
     security_active: bool | None = None   # signal 1255 vehicleSecurityActive — None = the car never said
     charge_limit_percent: int | None = None  # configured max-charge SoC (from the config block, not a
                                              # signal); None if unknown / model doesn't report it
@@ -521,27 +521,32 @@ def _charge_power_kw(sig: dict) -> float:
 
 def _is_plugged_in(sig: dict) -> bool:
     """Whether the charge cable is physically connected. Uses signal 1149 (charge
-    connection status: 1=connected, 2=charging), gated by motion.
+    state: 1–4 = a cable in, see below), gated by motion.
 
     Why 1149 and not 47: signal 47 (acInputSlowCharge) was the old primary, but on the
     B10 it LATCHES at 1 after an AC charge and only clears ~5 min later, when the car's
     charge controller tears down the AC subsystem — it does NOT drop on unplug. That kept
     a finished charge SESSION open long after the cable was pulled (the plug_connected
     OR-term in the state machine never went false), inflating the session window.
-    Signal 1149 instead drops to 0 promptly when the charge SESSION ends — at completion
-    (target SoC reached) or on unplug. Verified on-car twice: 1149 fell ~40s after the car
-    hit its charge limit and the session closed at once, while 47 stayed latched at 1 for
-    10+ minutes (right through the physical unplug). Its only flaw is reading 1 spuriously
+    Signal 1149 instead drops to 0 when the charge SESSION ends — on unplug, or once the car
+    has wound the session down after reaching its limit (seconds on one B10, verified on-car
+    twice with the session closing at once; minutes on another, see below), while 47 stayed
+    latched at 1 for 10+ minutes (right through the physical unplug). Its only flaw is reading 1 spuriously
     during regen at speed, so we suppress it while the car is moving (it can never be
     plugged in while driving anyway — same motion gate as _is_charging). Falls back to
-    signal 47 only when 1149 is absent (other models)."""
+    signal 47 only when 1149 is absent (other models).
+
+    1 and 2 differ between cars. The official app interprets 1 as charging and 2 as finished, and a
+    BEV B10 agrees: 1 for the whole of a charge, 2 from the moment it ends, then 0 a while later
+    with the cable still in. A C10 charging AC (beta #13) and the B10 in #243 read 2 mid-charge.
+    Either way the cable is in."""
     if _si(sig, "1010") not in (None, 0):       # gear R/N/D → moving, cannot be plugged
         return False
     if (_sf(sig, "1319") or 0) > 2.0:            # speed > 2 km/h → moving (gear may lag)
         return False
     conn = _si(sig, "1149")
     if conn is not None:
-        # 1=connected, 2=charging, 3=a third connected state the REEVs cycle THROUGH mid-charge
+        # 1, 2 = connected (see above), 3=a third connected state the REEVs cycle THROUGH mid-charge
         # (seen on the C10/B10 range-extenders alongside 1=2, always parked, current ~0). Treating
         # 3 as unplugged made the cable read as pulled every time it flickered 2→3→2, which closed
         # and reopened the session and shredded one slow AC charge into many empty fragments — each
@@ -617,8 +622,8 @@ def _is_charging(sig: dict) -> bool:
             # during slow AC charging — the on-board charger feeds the pack by a path this sensor
             # doesn't see — so the BEV rule "current ≥ 2 A" never fires and the session is missed
             # (beta #13 ebagnoli; same signature back to the earliest 1.36.1 bundle). Trust the
-            # cable's OWN state when it explicitly says "charging" (1149==2, not the
-            # "connected/waiting" 1149==1 of a scheduled charge) AND a charge is in progress
+            # cable's OWN state when it reads 1149==2, as that car does while charging AC (a BEV
+            # B10 sends 2 only once its charge has ended), AND a charge is in progress
             # (remaining minutes > 0). Driving is already gated out above, and a bare 0→2→0 cable
             # blip has no remaining-time so it still can't open a phantom.
             #
@@ -637,7 +642,7 @@ def _is_charging(sig: dict) -> bool:
         return remaining is not None or power >= 1.0
     if power >= 1.0:
         return remaining is not None
-    return _si(sig, "1149") == 2                    # fallback: connection status "charging"
+    return _si(sig, "1149") == 2                    # fallback: 2 is "charging" on a C10 (see above)
 
 
 # ── GPS sign memory (GitHub #43) ────────────────────────────────────────────────
@@ -850,7 +855,9 @@ def _parse_signal(vin: str, sig: dict) -> VehicleData:
         tire_rr_bar=round(float(sig.get("2667") or 0) / 100.0, 2),
         ready=int(sig.get("1258") or 0) == 1,   # B10 faithful READY (ON3) sensor
         ready_reported=_sf(sig, "1258") is not None,
-        charge_completed=int(sig.get("3736") or 0) != 0,  # 3736 chargeCompleted — truthy (confirm value at a real full charge)
+        # 3736 is no full-charge flag: the official app interprets it as isHaveFullCharge (a tip that a healthy-charging
+        # calibration needs a charge to 100 %); a BEV B10 never sets it, a B10 REEV holds it for the whole charge.
+        charge_completed=int(sig.get("3736") or 0) != 0,
         # 🔴 None when the car never sends 1255 — NOT False. Two C10s (@ghuaywen-ai #256,
         # @ebagnoli over 17 continuous days) carry 77 and 88 signals and neither has it, while a
         # B10 sends it 252 times with values 0/1/2. Read as False, an absent signal printed
