@@ -4286,12 +4286,14 @@ def get_latest_status() -> Optional[dict]:
         if last_range:
             d["range_km"] = last_range["range_km"]
             d["range_stale"] = True
-    # Charge power: positions stores current/voltage, not a power column. Compute it
-    # (|I×V|), only when the charge current is meaningful (>=3A). Signal 49 is NOT a
-    # power (it's the left-mirror-heating flag) and must never be used here.
+    # Charge power: positions stores current/voltage, not a power column. Compute it (|I×V|) with
+    # no current floor, as the poller does since #307 and the chart under a charge always did: at
+    # 800 V a 1.7 kW home charge carries 2.4 A, and the 3 A this copy kept printed 0.00 kW over it
+    # (#409). Zero current already reads zero. Signal 49 is NOT a power (it's the
+    # left-mirror-heating flag) and must never be used here.
     cur_a = d.get("charge_current_a")
     volt_v = d.get("charge_voltage_v")
-    if cur_a is not None and volt_v is not None and abs(cur_a) >= 3.0:
+    if cur_a is not None and volt_v is not None:
         d["charge_power_kw"] = round(abs(cur_a * volt_v) / 1000.0, 2)
     else:
         d["charge_power_kw"] = 0.0
