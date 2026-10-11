@@ -2271,8 +2271,9 @@ def _custom_kwh_cost(charge, energy: float, base: float, ctype: str = "HOME") ->
     PRICE and weights it over the power curve; what he has is a number of kWh, already worked out,
     and what he wants is one multiplication.
 
-    So this reads the entity's LAST value inside the charge's window and multiplies. Not the rise
-    across the window, not an average: the value, as Silvio put it — the helper's job is to present
+    So this reads the entity's LAST value inside the session's window (up to the car's close of it,
+    since the helper may post its figure after the charge stopped adding energy) and multiplies. Not
+    the rise across the window, not an average: the value, as Silvio put it — the helper's job is to present
     the kWh this charge should be billed for, and ours is to price them. That is a deliberate
     simplification: a helper exposing a lifetime counter instead of a per-charge figure will price
     a fortune, and no guard here can tell the two apart.
@@ -2290,7 +2291,8 @@ def _custom_kwh_cost(charge, energy: float, base: float, ctype: str = "HOME") ->
 
     import ha_client   # local: ha_client imports db_reader, so this avoids a circular import
     db = _get()
-    lo, hi, _excl = _power_window_bounds(db, charge["started_at"], charge["ended_at"])
+    closed = charge["closed_at"] if "closed_at" in charge.keys() else None
+    lo, hi, _excl = _power_window_bounds(db, charge["started_at"], closed or charge["ended_at"])
     hist = ha_client.get_history(entity_id, lo, hi)
     if not hist:
         return flat

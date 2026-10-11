@@ -535,6 +535,12 @@ def ensure_schema(conn) -> None:
     # → tests/test_a_charge_records_why_it_closed.py
     if "close_reason" not in ccols:
         _add_column(conn, "ALTER TABLE charges ADD COLUMN close_reason TEXT DEFAULT NULL")
+    # migration: WHEN the car ended its charge session, or, for one closed after an outage, its last reading.
+    # `ended_at` is when the charge stopped adding energy, minutes or hours earlier; what reads the session
+    # (a kWh helper in Home Assistant, the wallbox counter) reads up to this. NULL on rows older than the
+    # column and on manual and reconstructed charges, which had no session.
+    if "closed_at" not in ccols:
+        _add_column(conn, "ALTER TABLE charges ADD COLUMN closed_at TEXT DEFAULT NULL")
     # migration: public charging-station label, resolved by the web layer from OSM
     # (web/charger_locator.py; '' = looked up, nothing found). Display-only — it never
     # feeds charge detection, costs or the HOME/AC/FAST/HPC location_type.
