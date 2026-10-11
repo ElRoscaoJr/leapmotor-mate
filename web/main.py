@@ -279,10 +279,10 @@ def _range_at_charge_target(range_km, soc):
     """Overview range estimate aimed at the car's charge limit (disc #266, @adoewa). A template GLOBAL,
     like absent_temps below, because status_card.html is rendered by several routes: a per-route value
     would reach one render and vanish from the rest. Reads the current car's REAL limit (the SoC it
-    stops at, never a value typed into Mate — see _configured_charge_limit) and hands db_reader the
-    pure extrapolation."""
+    stops at, never a value typed into Mate — see db_reader.configured_charge_limit) and hands
+    db_reader the pure extrapolation."""
     vehicle, _ = db_reader.get_vehicle()
-    limit = _configured_charge_limit((vehicle or {}).get("vin") or "")
+    limit = db_reader.configured_charge_limit((vehicle or {}).get("vin") or "")
     return db_reader.range_at_charge_target(range_km, soc, limit)
 
 
@@ -298,7 +298,7 @@ def _range_estimates(range_km, soc):
         return None
     
     vehicle, _ = db_reader.get_vehicle()
-    limit = _configured_charge_limit((vehicle or {}).get("vin") or "")
+    limit = db_reader.configured_charge_limit((vehicle or {}).get("vin") or "")
     
     # Always compute the estimate at 100%
     full_est = db_reader.range_at_charge_target(range_km, soc, 100)
@@ -706,7 +706,7 @@ async def overview(request: Request):
         last_position=_last_position(status, t),
         last_charge=charges[0] if charges else None,
         v2l=db_reader.get_v2l_status(),
-        charge_limit=_configured_charge_limit((vehicle or {}).get("vin") or ""),
+        charge_limit=db_reader.configured_charge_limit((vehicle or {}).get("vin") or ""),
         car_resp=db_reader.command_responsiveness(),
         battery_price=db_reader.current_blended_price(),   # #200 — must match /api/status-card
         data_link=None if _IS_DEMO else db_reader.data_link(status),   # demo runs no poller
@@ -4959,26 +4959,6 @@ async def v2l_card(request: Request):
                                       _ctx(v2l=db_reader.get_v2l_status()))
 
 
-def _configured_charge_limit(vin: str = "") -> int | None:
-    """The car's REAL max-charge limit — the SoC it will actually stop at — for the Overview hero's
-    "to X%" ETA label. It is `config["3"]["percent"]` exactly as the CAR reports it, captured by the
-    poll loop on every change (it tracks the app's slider "even when the limit is changed from the
-    official app", poller/main.py) and stored under the per-VIN key. So set the limit to 75 or 80 on
-    the car and the hero reads exactly that.
-
-    🔒 It is NEVER a value typed into Mate. The poll loop only ever writes the per-VIN key from the
-    car's own report; the shared (non-VIN) `charge_limit_percent` key is what Mate's Set-limit button
-    writes — a typed value — and is deliberately NOT consulted here. When the car hasn't reported a
-    limit yet, this is None → the template shows the remaining time with no target, never a guessed
-    100. → #33 (@pdifeo)."""
-    if not vin:
-        return None
-    try:
-        return int(db_reader.get_setting(f"charge_limit_percent_{vin.lower()}", "") or 0) or None
-    except (TypeError, ValueError):
-        return None
-
-
 def _charge_window() -> str:
     """"HH:MM – HH:MM" for the car's enabled charge window, else "" (#173). Read from the settings
     the poller caches — never a cloud call, so it costs nothing on a page that redraws every 30 s.
@@ -5004,7 +4984,7 @@ async def overview_hero(request: Request):
     status = db_reader.get_latest_status()
     vehicle, _ = db_reader.get_vehicle()
     return templates.TemplateResponse(request, "partials/overview_hero.html", _ctx(
-        status=status, vehicle=vehicle, charge_limit=_configured_charge_limit((vehicle or {}).get("vin") or ""),
+        status=status, vehicle=vehicle, charge_limit=db_reader.configured_charge_limit((vehicle or {}).get("vin") or ""),
     ))
 
 

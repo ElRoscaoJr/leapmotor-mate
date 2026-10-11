@@ -3968,6 +3968,26 @@ def upsert_vehicle(vin: str, car_type: str) -> None:
     db.commit()
 
 
+def configured_charge_limit(vin: str = "") -> int | None:
+    """The car's REAL max-charge limit — the SoC it will actually stop at — for the Overview hero's
+    "to X%" ETA label. It is `config["3"]["percent"]` exactly as the CAR reports it, captured by the
+    poll loop on every change (it tracks the app's slider "even when the limit is changed from the
+    official app", poller/main.py) and stored under the per-VIN key. So set the limit to 75 or 80 on
+    the car and the hero reads exactly that.
+
+    🔒 It is NEVER a value typed into Mate. The poll loop only ever writes the per-VIN key from the
+    car's own report; the shared (non-VIN) `charge_limit_percent` key is what Mate's Set-limit button
+    writes — a typed value — and is deliberately NOT consulted here. When the car hasn't reported a
+    limit yet, this is None → the template shows the remaining time with no target, never a guessed
+    100. → #33 (@pdifeo)."""
+    if not vin:
+        return None
+    try:
+        return int(get_setting(f"charge_limit_percent_{vin.lower()}", "") or 0) or None
+    except (TypeError, ValueError):
+        return None
+
+
 def get_vehicle():
     db = _get()
     # `ORDER BY id` is load-bearing, not decoration: `vin` is UNIQUE, so SQLite has a covering

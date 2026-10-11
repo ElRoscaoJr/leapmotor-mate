@@ -69,12 +69,12 @@ def _charging_body(main):
 def test_the_real_limit_is_returned_regardless_of_the_plan(tmp_path, monkeypatch):
     """The car reports a 90% max-charge limit → that is the target, plan on or off."""
     main = _install(tmp_path, monkeypatch, limit_pct=90)
-    assert main._configured_charge_limit(_VIN) == 90
+    assert main.db_reader.configured_charge_limit(_VIN) == 90
 
 
 def test_none_when_the_car_reports_no_limit(tmp_path, monkeypatch):
     main = _install(tmp_path, monkeypatch, limit_pct=None)
-    assert main._configured_charge_limit(_VIN) is None
+    assert main.db_reader.configured_charge_limit(_VIN) is None
 
 
 def test_a_value_typed_into_mate_is_never_used(tmp_path, monkeypatch):
@@ -83,7 +83,7 @@ def test_a_value_typed_into_mate_is_never_used(tmp_path, monkeypatch):
     limit (the per-VIN key the poll loop fills). No car-reported value → None, even if a typed one
     sits in the shared key."""
     main = _install(tmp_path, monkeypatch, limit_pct=75, shared_only=True)
-    assert main._configured_charge_limit(_VIN) is None
+    assert main.db_reader.configured_charge_limit(_VIN) is None
 
 
 # ── the hero label ────────────────────────────────────────────────────────────
