@@ -1,8 +1,24 @@
 # LeapMotor Mate — Manual de usuario
 
-> **Versión de Mate:** v4.14.2 · **Idioma:** Español
+> **Versión de Mate:** v4.15.0 · **Idioma:** Español
 
-## Novedades de la versión 4.14.2
+## Novedades de la versión 4.15.0
+
+**Una carga se lee como un viaje.** En el calendario de Cargas cada carga es ahora una fila, con una
+miniatura de su curva al lado; un clic la abre debajo, con la energía, la temperatura de la batería, la
+exterior y la potencia media, el gráfico, la nota y las acciones. *Desplegar todo* abre todas las filas
+del día. Con Mayús-clic, arrastrando o manteniendo pulsado un día se abren varios días a la vez, con los
+totales del intervalo y de cada día (#412, @arekm).
+
+**La potencia de una carga lenta.** *Estado de la carga* en la página Cargas y la carga en curso en el
+Resumen muestran ahora también la potencia de una carga por debajo de 3 A, que en un coche de 800 V es
+una carga en casa por debajo de unos 2,2 kW: antes decían 0,00 kW (#409).
+
+**Una programación guardada aquí se ve enseguida.** Tras una ventana de carga guardada en la página
+*Programación* y confirmada por el coche, el Resumen muestra enseguida la ventana nueva, en lugar de la
+antigua durante hasta 30 minutos (#395).
+
+### Novedades de la versión 4.14.2
 
 **Una contraseña rechazada se nombra.** Cuando Leapmotor rechaza el correo y la contraseña que diste a
 Mate, el Resumen dice ahora «la contraseña fue rechazada» y te remite a la cuenta de Leapmotor en

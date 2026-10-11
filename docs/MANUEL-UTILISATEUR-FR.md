@@ -1,8 +1,25 @@
 # LeapMotor Mate — Manuel utilisateur
 
-> **Version de Mate :** v4.14.2 · **Langue :** Français
+> **Version de Mate :** v4.15.0 · **Langue :** Français
 
-## Nouveautés de la version 4.14.2
+## Nouveautés de la version 4.15.0
+
+**Une recharge se lit comme un trajet.** Dans le calendrier des Recharges, chaque recharge est désormais
+une ligne, avec à côté une miniature de sa courbe ; un clic l'ouvre en dessous, avec l'énergie, la
+température de la batterie, la température extérieure et la puissance moyenne, le graphique, la note et
+les actions. *Tout déplier* ouvre toutes les lignes du jour. Avec Maj-clic, en faisant glisser ou en
+maintenant un jour, on ouvre plusieurs jours à la fois, avec les totaux de la période et de chaque jour
+(#412, @arekm).
+
+**La puissance d'une recharge lente.** *État de charge* sur la page Recharges et la recharge en cours dans
+l'Aperçu affichent maintenant aussi la puissance d'une recharge sous 3 A, ce qui sur une voiture en 800 V
+est une recharge à domicile sous environ 2,2 kW : ils affichaient 0,00 kW (#409).
+
+**Une programmation enregistrée ici s'affiche tout de suite.** Après une plage de recharge enregistrée sur
+la page *Programmation* et confirmée par la voiture, l'Aperçu affiche aussitôt la nouvelle plage, au lieu
+de l'ancienne pendant jusqu'à 30 minutes (#395).
+
+### Nouveautés de la version 4.14.2
 
 **Un mot de passe refusé est nommé.** Quand Leapmotor refuse l'e-mail et le mot de passe que vous avez
 donnés à Mate, l'Aperçu dit désormais « le mot de passe a été refusé » et vous renvoie au compte

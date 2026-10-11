@@ -1,8 +1,24 @@
 # LeapMotor Mate — Manuale utente
 
-> **Versione di Mate:** v4.14.2 · **Lingua:** Italiano
+> **Versione di Mate:** v4.15.0 · **Lingua:** Italiano
 
-## Novità della 4.14.2
+## Novità della 4.15.0
+
+**Una ricarica si legge come un viaggio.** Nel calendario delle Ricariche ogni ricarica è ora una riga,
+con accanto una miniatura della sua curva; un clic la apre sotto, con l'energia, la temperatura della
+batteria, quella esterna e la potenza media, il grafico, la nota e le azioni. *Espandi tutto* apre tutte
+le righe del giorno. Con Maiusc-clic, trascinando o tenendo premuto un giorno se ne aprono diversi
+insieme, con i totali dell'intervallo e di ogni giorno (#412, @arekm).
+
+**La potenza di una ricarica lenta.** *Stato di carica* nella pagina Ricariche e la ricarica in corso
+nella Panoramica mostrano ora anche la potenza di una ricarica sotto i 3 A, che su un'auto a 800 V è
+una ricarica di casa sotto circa 2,2 kW: prima dicevano 0,00 kW (#409).
+
+**Una programmazione salvata qui si vede subito.** Dopo una finestra di ricarica salvata nella pagina
+*Schedulazione* e confermata dall'auto, la Panoramica mostra subito la finestra nuova, invece di quella
+vecchia per un massimo di 30 minuti (#395).
+
+### Novità della 4.14.2
 
 **Una password rifiutata viene chiamata per nome.** Quando Leapmotor rifiuta l'email e la password che
 hai dato a Mate, la Panoramica ora dice «la password è stata rifiutata» e ti manda all'account Leapmotor

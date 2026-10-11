@@ -1,8 +1,24 @@
 # LeapMotor Mate — User Manual
 
-> **Mate version:** v4.14.2 · **Language:** English
+> **Mate version:** v4.15.0 · **Language:** English
 
-## New in 4.14.2
+## New in 4.15.0
+
+**A charge reads like a trip.** In the Charges calendar each charge is now a row, with a thumbnail of
+its curve beside it; a click opens it underneath, with the energy, the battery's temperature, the
+outside temperature and the average power, the chart, the note and the actions. *Expand all* opens
+every row of the day. Shift-click, drag or hold a day to open several days at once, with the totals of
+the range and of each day (#412, @arekm).
+
+**The power of a slow charge.** *Charging status* on the Charges page and the charging chip on the
+Overview now show the power of a charge under 3 A too, which on an 800 V car is a home charge under
+about 2.2 kW: they read 0.00 kW before (#409).
+
+**A schedule saved here shows at once.** After a charge window you save on the *Scheduling* page and
+the car confirms, the Overview shows the new window straight away, instead of the old one for up to 30
+minutes (#395).
+
+### New in 4.14.2
 
 **A refused password is named.** When Leapmotor refuses the email and password you gave Mate, the
 Overview now says "the password was rejected" and points you to the Leapmotor account in Settings, and

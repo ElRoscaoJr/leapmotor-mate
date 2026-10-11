@@ -1,8 +1,24 @@
 # LeapMotor Mate — Benutzerhandbuch
 
-> **Mate-Version:** v4.14.2 · **Sprache:** Deutsch
+> **Mate-Version:** v4.15.0 · **Sprache:** Deutsch
 
-## Neu in Version 4.14.2
+## Neu in Version 4.15.0
+
+**Ein Ladevorgang liest sich wie eine Fahrt.** Im Kalender der Ladevorgänge ist jeder Ladevorgang jetzt
+eine Zeile, daneben ein kleines Bild seiner Kurve; ein Klick öffnet sie darunter, mit der Energie, der
+Batterietemperatur, der Außentemperatur und der durchschnittlichen Leistung, dem Diagramm, der Notiz und
+den Aktionen. *Alle aufklappen* öffnet alle Zeilen des Tages. Mit Umschalt-Klick, Ziehen oder Gedrückthalten
+eines Tages öffnest du mehrere Tage zugleich, mit den Summen des Zeitraums und jedes Tages (#412, @arekm).
+
+**Die Leistung einer langsamen Ladung.** *Ladestatus* auf der Seite Ladevorgänge und die laufende Ladung
+in der Übersicht zeigen jetzt auch die Leistung einer Ladung unter 3 A, was bei einem 800-V-Auto eine
+Ladung zu Hause unter etwa 2,2 kW ist: vorher stand dort 0,00 kW (#409).
+
+**Ein hier gespeicherter Zeitplan erscheint sofort.** Nachdem du auf der Seite *Planung* ein Ladefenster
+gespeichert und das Auto es bestätigt hat, zeigt die Übersicht sofort das neue Fenster, statt bis zu 30
+Minuten lang das alte (#395).
+
+### Neu in Version 4.14.2
 
 **Ein abgelehntes Passwort wird beim Namen genannt.** Wenn Leapmotor die E-Mail und das Passwort ablehnt,
 die du Mate gegeben hast, sagt die Übersicht jetzt „das Passwort wurde abgelehnt“ und verweist auf das

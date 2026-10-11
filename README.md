@@ -1,7 +1,7 @@
 # LeapMotor Mate
 
-**v4.14.2:** when Leapmotor refuses the password you gave Mate, the Overview **says the password was rejected**, and Mate waits an hour before trying it again instead of every 5 minutes ([#411](https://github.com/ProtossBlaster/leapmotor-mate/issues/411)). In **4.14.1**: on an account with two cars, a reading stays with the car it was read from ([#338](https://github.com/ProtossBlaster/leapmotor-mate/issues/338)).
-See [release notes and upgrade impact](docs/releases/v4.14.2.md).
+**v4.15.0:** in the Charges calendar **a charge is a row that opens**, like a trip, with a thumbnail of its curve, and the calendar **opens several days** at once ([#412](https://github.com/ProtossBlaster/leapmotor-mate/pull/412), @arekm). The charging panel shows the power of a charge under 3 A ([#409](https://github.com/ProtossBlaster/leapmotor-mate/issues/409)), and a charge window saved on the Scheduling page shows on the Overview at once ([#395](https://github.com/ProtossBlaster/leapmotor-mate/issues/395)).
+See [release notes and upgrade impact](docs/releases/v4.15.0.md).
 
 [![CI](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/ci.yml/badge.svg)](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/ci.yml)
 [![Docker](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/docker-publish.yml)
@@ -360,8 +360,8 @@ Works with any MQTT broker (e.g. the Mosquitto add‑on). Use **Test connection*
 
 # LeapMotor Mate · Italiano
 
-**v4.14.2:** quando Leapmotor rifiuta la password che hai dato a Mate, la Panoramica **dice che la password è stata rifiutata**, e Mate aspetta un'ora prima di riprovarla invece di riprovare ogni 5 minuti ([#411](https://github.com/ProtossBlaster/leapmotor-mate/issues/411)). Nella **4.14.1**: su un account con due auto, una lettura resta all'auto da cui è stata letta ([#338](https://github.com/ProtossBlaster/leapmotor-mate/issues/338)). [Note di rilascio](docs/releases/v4.14.2.md#italiano)
-Vedi [note di rilascio e impatto dell'aggiornamento](docs/releases/v4.14.2.md#italiano).
+**v4.15.0:** nel calendario delle Ricariche **una ricarica è una riga che si apre**, come un viaggio, con la miniatura della sua curva, e il calendario **apre più giorni** insieme ([#412](https://github.com/ProtossBlaster/leapmotor-mate/pull/412), @arekm). Il pannello di carica mostra la potenza di una ricarica sotto i 3 A ([#409](https://github.com/ProtossBlaster/leapmotor-mate/issues/409)), e una finestra di ricarica salvata nella pagina Schedulazione si vede subito nella Panoramica ([#395](https://github.com/ProtossBlaster/leapmotor-mate/issues/395)).
+Vedi [note di rilascio e impatto dell'aggiornamento](docs/releases/v4.15.0.md#italiano).
 
 **Tracciamento viaggi, registro ricariche e controllo remoto per veicoli Leapmotor** — un companion self‑hosted (un *TeslaMate* per Leapmotor). Funziona come **add‑on di Home Assistant** o come **container Docker standalone**.
 
