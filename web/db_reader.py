@@ -958,17 +958,21 @@ def never_reported_temps() -> set:
     return {k for k in _OPTIONAL_TEMPS if not int(row[k] or 0)}
 
 
+def _schedule_vin() -> str:
+    """The VIN the charge-window keys of the car on screen are filed under ('' when unknown)."""
+    try:
+        row = _get().execute("SELECT vin FROM vehicles WHERE id = COALESCE(?, id) ORDER BY id "
+                             "LIMIT 1", (_current_vehicle_id(),)).fetchone()
+        return (row["vin"] if row and row["vin"] else "").lower()
+    except sqlite3.Error:
+        return ""
+
+
 def get_charge_schedule_window() -> dict:
     """The charging plan of the car ON SCREEN (#186). The poller reads each car's own plan from the
     cloud; one shared key meant the car polled last overwrote the other, and the Scheduling page
     showed one plan under both. Falls back to the shared keys, which is what installs have today."""
-    vin = ""
-    try:
-        row = _get().execute("SELECT vin FROM vehicles WHERE id = COALESCE(?, id) ORDER BY id "
-                             "LIMIT 1", (_current_vehicle_id(),)).fetchone()
-        vin = (row["vin"] if row and row["vin"] else "").lower()
-    except sqlite3.Error:
-        pass
+    vin = _schedule_vin()
 
     def _one(name, default=""):
         own = get_setting(f"charge_sched_{name}_{vin}", "") if vin else ""
@@ -977,6 +981,17 @@ def get_charge_schedule_window() -> dict:
     return {"enabled": _one("enabled", "0") == "1",
             "start": (_one("start") or "").strip(),
             "end": (_one("end") or "").strip()}
+
+
+def set_charge_schedule_window(enabled: bool, start: str, end: str) -> None:
+    """A plan the car just took from the Scheduling page, under the keys `get_charge_schedule_window`
+    reads first: the car's own, which the poller otherwise refreshes only every 30 min (#173). Writing
+    the shared keys alone left the chip on the old plan once the poller had filed one under the car
+    (#186), and switched off on #395 the chip still showed it on. The poller's next read replaces it."""
+    suffix = f"_{vin}" if (vin := _schedule_vin()) else ""
+    set_setting(f"charge_sched_enabled{suffix}", "1" if enabled else "0")
+    set_setting(f"charge_sched_start{suffix}", start)
+    set_setting(f"charge_sched_end{suffix}", end)
 
 
 def _selected_or_first(db) -> Optional[int]:

@@ -242,4 +242,4 @@ def test_the_save_button_says_what_the_car_said(tmp_path, monkeypatch, ok, messa
     assert shown in page
     if not ok:
         assert i18n.get_t('en')('cmd_timeout_car') in page
-    assert db_reader.get_setting('charge_sched_start') == ('23:30' if kept else '01:50')
+    assert db_reader.get_charge_schedule_window()['start'] == ('23:30' if kept else '01:50')

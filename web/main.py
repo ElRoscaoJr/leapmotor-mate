@@ -5809,9 +5809,7 @@ async def save_charge_schedule_api(request: Request):
         # Refresh the Overview's cached window straight away (#173). The poller re-reads it from the
         # car only every 30 min; without this the chip would keep showing the OLD times right after
         # you changed them here, which reads as a bug rather than as a cache.
-        db_reader.set_setting("charge_sched_enabled", "1" if enabled else "0")
-        db_reader.set_setting("charge_sched_start", start)
-        db_reader.set_setting("charge_sched_end", end)
+        db_reader.set_charge_schedule_window(enabled, start, end)
         return HTMLResponse(f'<span style="color:#22c55e">✓ {t("sched_saved")}</span>',
                             headers={"HX-Trigger": "chargeScheduleSaved"})
     return HTMLResponse(_cmd_error_html(msg))
