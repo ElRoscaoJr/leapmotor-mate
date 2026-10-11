@@ -261,6 +261,20 @@ def _localdate(s) -> str:
 
 templates.env.filters["localdate"] = _localdate
 
+
+def _end_time(end, start) -> str:
+    """A span's end as "HH:MM", with its day ("04 Jul 00:30") when that is not the start's. Both local ISO."""
+    from datetime import datetime
+    try:
+        day, start_day = datetime.fromisoformat(end).date(), datetime.fromisoformat(start).date()
+    except (TypeError, ValueError):     # a time typed in by hand is stored as typed when it is no date
+        return end[11:16]
+    if day != start_day:
+        return f"{i18n.fmt_day_month(db_reader.get_language(), day)} {end[11:16]}"
+    return end[11:16]
+
+templates.env.filters["end_time"] = _end_time
+
 # Display-time unit conversion (DB stays metric — see units.py). Filters format "<value> <unit>";
 # the *_unit() / *_val() globals give a bare unit label or converted number (chart axes / JS data).
 import units

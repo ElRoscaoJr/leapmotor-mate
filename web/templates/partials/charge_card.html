@@ -61,7 +61,7 @@
         {# Breaks between its parts, never inside one: on a phone this block shares the line with the kWh column. #}
         <div class="text-white text-sm font-medium min-w-0">
           <span class="whitespace-nowrap">{{ c.started_at[11:16] if c.started_at else '—' }}</span>
-          <span class="text-slate-500 font-normal text-xs whitespace-nowrap">→ {{ c.ended_at[11:16] if c.ended_at else '' }}</span>
+          <span class="text-slate-500 font-normal text-xs whitespace-nowrap">→ {{ c.ended_at|end_time(c.started_at) if c.ended_at else '' }}</span>
           {% if c.is_merged %}<span style="font-size:10px" class="text-yellow-400 whitespace-nowrap" title="{{ c.merged_count }} {{ t('charge_merge_segments') }}">🔗 {{ c.merged_count }}</span>{% endif %}
         </div>
         {# The type selector — pencil, badge, menu, the #120 free tick — is ONE partial, drawn here and

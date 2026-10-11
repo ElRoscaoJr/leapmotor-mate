@@ -4,7 +4,7 @@
 <div style="background:#0b1220;border:1px solid #ca8a04;border-radius:10px;padding:12px" class="my-3">
   <div class="text-sm font-semibold text-yellow-400 mb-2">{{ t('charge_merge_preview_title') }}</div>
   <div style="font-size:12px" class="text-slate-300 space-y-0.5">
-    <div>🕘 {{ g.started_at[11:16] if g.started_at else '—' }} → {{ g.ended_at[11:16] if g.ended_at else '—' }}
+    <div>🕘 {{ g.started_at[11:16] if g.started_at else '—' }} → {{ g.ended_at|end_time(g.started_at) if g.ended_at else '—' }}
          <span class="text-slate-500">· {{ fmt_dur(g.duration_min) }}</span></div>
     <div>🔋 {{ (g.start_soc or 0)|dec(1) }}% → {{ (g.end_soc or 0)|dec(1) }}%</div>
     <div>⚡ {{ (g.energy_added_kwh or 0)|dec(2) }} kWh

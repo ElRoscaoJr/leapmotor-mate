@@ -84,6 +84,7 @@ def _env():
     env.filters["money"] = lambda v: "—" if v is None else f"{float(v):.2f} €"
     env.filters["price3"] = lambda v: "—" if v is None else f"{float(v):.3f}"
     env.filters["dec"] = lambda v, n=1: "—" if v is None else f"{float(v):.{n}f}"
+    env.filters["end_time"] = lambda end, start: end[11:16]
     env.filters["nice"] = lambda v: "—" if v is None else f"{float(v):g}"
     env.filters["dist"] = lambda v, n=1: "—" if v is None else f"{float(v):.{n}f} km"
     env.filters["speed"] = lambda v, n=0: "—" if v is None else f"{float(v):.{n}f} km/h"

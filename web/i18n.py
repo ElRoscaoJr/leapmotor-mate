@@ -43,10 +43,15 @@ def fmt_month_year(lang: str, dt) -> str:
     return f"{months['full'][dt.month - 1]} {dt.year}"
 
 
+def fmt_day_month(lang: str, dt) -> str:
+    """Localized "%d %b" → e.g. "02 giu"."""
+    months = _MONTHS.get(lang, _MONTHS["en"])
+    return f"{dt.day:02d} {months['abbr'][dt.month - 1]}"
+
+
 def fmt_day_month_year(lang: str, dt) -> str:
     """Localized "%d %b %Y" → e.g. "02 giu 2026". Used for day labels in history trees."""
-    months = _MONTHS.get(lang, _MONTHS["en"])
-    return f"{dt.day:02d} {months['abbr'][dt.month - 1]} {dt.year}"
+    return f"{fmt_day_month(lang, dt)} {dt.year}"
 
 
 def fmt_day_range(lang: str, first, last) -> str:

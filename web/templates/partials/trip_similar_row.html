@@ -9,7 +9,7 @@
     <div class="text-white text-sm font-medium">
       {{ s.started_at | localdate }}
       <span class="text-slate-500 font-normal text-xs ml-1">
-        {{ s.started_at[11:16] if s.started_at else '' }} → {{ s.ended_at[11:16] if s.ended_at else '' }}
+        {{ s.started_at[11:16] if s.started_at else '' }} → {{ s.ended_at|end_time(s.started_at) if s.ended_at else '' }}
       </span>
     </div>
     <div class="text-slate-500 text-xs">
