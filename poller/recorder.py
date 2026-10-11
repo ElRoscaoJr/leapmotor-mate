@@ -693,8 +693,10 @@ class Recorder:
                 # The cable read gone is the ordinary end; the car declaring the charge
                 # postponed to its programmed window (1149==4, #243) is the other way this
                 # branch is reached, and triage wants them apart.
+                # Dated when it stopped adding energy: the car ends its charge session some time after that.
                 self._db.finalize_charge(
                     self._active_charge_id, data, max_power_kw=self._max_charge_kw,
+                    stopped=self._db.charge_stopped_adding_at(self._active_charge_id),
                     reason=("deferred" if (data.plug_connected and data.charge_deferred)
                             else "unplugged"),
                 )

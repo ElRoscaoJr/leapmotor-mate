@@ -7,6 +7,7 @@ import sqlite3
 import time
 from contextlib import contextmanager
 from datetime import datetime, timezone, timedelta
+from itertools import pairwise
 from pathlib import Path
 from typing import NamedTuple, Optional
 
@@ -160,7 +161,7 @@ def _wb_energy_ceiling(max_power_kw: Optional[float], hours: Optional[float]) ->
 
 # The schema and its migration live in their own dependency-free module so the web can run them
 # too — see poller/schema.py for why that matters.
-from schema import SCHEMA, ensure_schema  # noqa: F401  (SCHEMA re-exported for tests)
+from schema import CHARGE_SAMPLE, SCHEMA, ensure_schema  # noqa: F401  (SCHEMA re-exported for tests)
 
 # self.get_battery_capacity() is now stored in settings table, not hardcoded
 
@@ -2317,11 +2318,49 @@ class Database:
             return None
         return self._charging_end_in_window(charge["vehicle_id"], charge["started_at"])
 
+    def charge_stopped_adding_at(self, charge_id: int) -> Optional[tuple]:
+        """The reading on which this charge stopped adding energy, as (soc, recorded_at): the first with an SoC
+        after its last sample (CHARGE_SAMPLE: the charging flag, or current entering the pack), or its last SoC
+        rise when that comes later (a car whose frame shows no current while it charges).
+
+        None when no reading with an SoC follows its last sample, or it has neither: the charge then ends with
+        its session."""
+        charge = self._conn.execute(
+            "SELECT vehicle_id, started_at FROM charges WHERE id=?", (charge_id,)).fetchone()
+        if charge is None or not charge["started_at"]:
+            return None
+        vid, start = charge["vehicle_id"], charge["started_at"]
+
+        def one(sql, *args):
+            return self._conn.execute(sql, (vid, start, *args)).fetchone()[0]
+
+        ends = []
+        last_sample = one("SELECT MAX(recorded_at) FROM positions WHERE vehicle_id=? AND recorded_at>=? "
+                          "AND (" + CHARGE_SAMPLE + ")")
+        if last_sample:
+            after = one("SELECT MIN(recorded_at) FROM positions WHERE vehicle_id=? AND recorded_at>=? "
+                        "AND recorded_at>? AND soc IS NOT NULL", last_sample)
+            if after is None:
+                return None
+            ends.append(after)
+        rows = self._conn.execute("SELECT recorded_at, soc FROM positions WHERE vehicle_id=? AND recorded_at>=? "
+                                  "AND soc IS NOT NULL ORDER BY recorded_at", (vid, start)).fetchall()
+        rises = [cur["recorded_at"] for prev, cur in pairwise(rows) if cur["soc"] > prev["soc"]]
+        if rises:
+            ends.append(rises[-1])
+        end = max(ends, default=None)
+        if end is None:
+            return None
+        return one("SELECT soc FROM positions WHERE vehicle_id=? AND recorded_at>=? AND recorded_at=?", end), end
+
     def finalize_charge(self, charge_id: int, data, max_power_kw: float = 0.0,
-                        price_per_kwh: float = 0.0, end_override=None,
+                        price_per_kwh: float = 0.0, end_override=None, stopped=None,
                         reason: Optional[str] = None) -> None:
         """`end_override` = (soc, ended_at) closes the charge on a reading other than `data` —
         used when the car drove away and the live frame is no longer the end of the charge.
+
+        `stopped` = (soc, recorded_at), the reading the charge stopped adding energy on, before the
+        session closed: it dates the charge, and `closed_at` keeps the close for what reads the session.
 
         `reason` is the one word that says WHY this charge stopped (#289) — see
         `charges.close_reason`. Every caller names it; the default exists only so an old call
@@ -2329,7 +2368,8 @@ class Database:
         than the column."""
         charge = self._conn.execute("SELECT * FROM charges WHERE id = ?", (charge_id,)).fetchone()
         start_soc    = charge["start_soc"]
-        end_soc, end_at = (end_override if end_override else (data.soc, _now_iso()))
+        end_soc, closed_at = (end_override if end_override else (data.soc, _now_iso()))
+        end_soc, end_at = stopped or (end_soc, closed_at)
         # Energy from ΔSoC × capacity. ONLY on 100%-ending charges, anchor the ΔSoC to the
         # last SoC seen while still charging (see _last_charging_soc): the snap-to-full is a
         # top-of-charge phenomenon, while on mid-SoC charges the final tick (e.g. 94.9→95.0
@@ -2368,14 +2408,16 @@ class Database:
         # charge by accumulate_wallbox_energy() (the wallbox-billed energy).
         started_at   = datetime.fromisoformat(charge["started_at"])
         duration_min = (datetime.fromisoformat(end_at) - started_at).total_seconds() / 60
+        # The counter is read until the session closes, however much earlier the charge ended.
+        metered_h    = (datetime.fromisoformat(closed_at) - started_at).total_seconds() / 3600
 
         self._conn.execute(
             """UPDATE charges
-               SET ended_at=?, end_soc=?, energy_added_kwh=?, duration_min=?,
+               SET ended_at=?, closed_at=?, end_soc=?, energy_added_kwh=?, duration_min=?,
                    charge_type=?, max_power_kw=?, cost=?, close_reason=?
                WHERE id=?""",
             (
-                end_at, end_soc, round(energy_added, 3), round(duration_min, 1),
+                end_at, closed_at, end_soc, round(energy_added, 3), round(duration_min, 1),
                 charge_type, round(max_power_kw, 2), cost, reason,
                 charge_id,
             ),
@@ -2384,7 +2426,7 @@ class Database:
         # Backstop for the per-poll guard (GitHub #46): if the final wallbox total is still
         # physically impossible for this session, the counter was unreliable — drop it so the
         # charge bills on the DC (SoC) energy instead of an absurd AC figure.
-        if ac_kwh is not None and ac_kwh > _wb_energy_ceiling(max_power_kw, duration_min / 60):
+        if ac_kwh is not None and ac_kwh > _wb_energy_ceiling(max_power_kw, metered_h):
             self._conn.execute("UPDATE charges SET ac_energy_kwh=NULL WHERE id=?", (charge_id,))
             self._conn.commit()
             log.warning("Charge #%d: dropped implausible wallbox energy %.1f kWh (kept DC billing)",

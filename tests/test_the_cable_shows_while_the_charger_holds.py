@@ -80,7 +80,7 @@ def test_a_reading_without_a_plug_says_nothing(car):
 
 
 def test_the_charges_page_badge_reads_the_port(car):
-    car.frame(plug_connected=0, ac_port_mode=1, charge_completed=1)
+    car.frame(plug_connected=0, ac_port_mode=1, soc=100.0)
     assert "Fully charged" in car.get("/charges")
 
 

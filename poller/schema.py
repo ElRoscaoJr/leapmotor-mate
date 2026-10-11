@@ -295,6 +295,12 @@ CREATE TABLE IF NOT EXISTS addresses (
 """
 
 
+# A reading that is a sample of a charge: the car's own flag, or current entering the pack while parked.
+# The partial index below is built on it; web/db_reader._charging_sample asks the same with a table alias.
+CHARGE_SAMPLE = ("charging = 1 OR (charge_current_a <= -0.5 AND "
+                 "COALESCE(speed_kmh, 0) <= 2 AND COALESCE(gear, 'P') = 'P')")
+
+
 def _add_column(conn, sql: str) -> None:
     """One `ALTER TABLE … ADD COLUMN`, tolerating the column already being there.
 
@@ -411,8 +417,7 @@ def ensure_schema(conn) -> None:
     # 🔴 HERE, not in SCHEMA: charge_current_a arrives with the ALTER just above, so an index on it
     # inside the schema script fails on a fresh database and takes the WHOLE script down with it.
     conn.execute("CREATE INDEX IF NOT EXISTS idx_positions_charge_sample ON positions(vehicle_id, recorded_at)"
-                 " WHERE charging = 1 OR (charge_current_a <= -0.5 AND "
-                 "COALESCE(speed_kmh, 0) <= 2 AND COALESCE(gear, 'P') = 'P')")
+                 " WHERE " + CHARGE_SAMPLE)
     if "ready" not in cols:
         _add_column(conn, "ALTER TABLE positions ADD COLUMN ready INTEGER DEFAULT NULL")
     if "charge_completed" not in cols:
@@ -530,6 +535,12 @@ def ensure_schema(conn) -> None:
     # → tests/test_a_charge_records_why_it_closed.py
     if "close_reason" not in ccols:
         _add_column(conn, "ALTER TABLE charges ADD COLUMN close_reason TEXT DEFAULT NULL")
+    # migration: WHEN the car ended its charge session, or, for one closed after an outage, its last reading.
+    # `ended_at` is when the charge stopped adding energy, minutes or hours earlier; what reads the session
+    # (a kWh helper in Home Assistant, the wallbox counter) reads up to this. NULL on rows older than the
+    # column and on manual and reconstructed charges, which had no session.
+    if "closed_at" not in ccols:
+        _add_column(conn, "ALTER TABLE charges ADD COLUMN closed_at TEXT DEFAULT NULL")
     # migration: public charging-station label, resolved by the web layer from OSM
     # (web/charger_locator.py; '' = looked up, nothing found). Display-only — it never
     # feeds charge detection, costs or the HOME/AC/FAST/HPC location_type.

@@ -18,6 +18,7 @@ from datetime import datetime, timedelta, timezone
 
 import db_reader
 import ha_client
+from test_a_charge_records_why_it_closed import _ms, _vd, car  # noqa: F401  (car: fixture)
 
 
 T0 = datetime(2026, 7, 1, 12, 0, 0, tzinfo=timezone.utc)
@@ -41,11 +42,12 @@ def _db():
     return con
 
 
-def _charge(ended=True):
+def _charge(ended=True, closed_min=None):
     return {
         "location_type": "HOME", "energy_added_kwh": MEASURED_KWH, "ac_energy_kwh": None,
         "started_at": T0.isoformat(),
         "ended_at": (T0 + timedelta(hours=2)).isoformat() if ended else None,
+        "closed_at": (T0 + timedelta(minutes=closed_min)).isoformat() if closed_min else None,
     }
 
 
@@ -60,6 +62,10 @@ def _setup(monkeypatch, con, entity_id="sensor.kwh_da_rete", base_price=PRICE):
 
 def _ts(minutes):
     return (T0 + timedelta(minutes=minutes)).timestamp()
+
+
+def _at(hhmm):
+    return datetime.fromisoformat(f"2026-09-15T{hhmm}:00+00:00").timestamp()
 
 
 # ── the scenario he actually described ──────────────────────────────────────────────────────────
@@ -90,6 +96,19 @@ def test_the_value_read_is_the_last_one_in_the_window(monkeypatch):
     monkeypatch.setattr(ha_client, "get_history",
                         lambda eid, lo, hi: [(_ts(0), 0.0), (_ts(60), 3.0), (_ts(120), 7.0)])
     assert db_reader.compute_cost(_charge()) == 1.68
+
+
+def test_a_figure_posted_after_the_energy_stopped_is_still_read(monkeypatch):
+    con = _db()
+    _setup(monkeypatch, con)
+    # The charge stopped adding energy at two hours; the car held its session open nine minutes more,
+    # and the helper posted the charge's figure in between. The session is the window, as it was.
+    def posted(eid, lo, hi):
+        end = datetime.fromisoformat(hi).timestamp()
+        return [(t, v) for t, v in ((_ts(120), 6.0), (_ts(124), 7.0)) if t <= end]
+
+    monkeypatch.setattr(ha_client, "get_history", posted)
+    assert db_reader.compute_cost(_charge(closed_min=129)) == 1.68
 
 
 # ── every way it can fail, and the one answer to all of them ────────────────────────────────────
@@ -142,3 +161,24 @@ def test_custom_kwh_is_home_only():
     for away in ("AC", "FAST", "HPC"):
         assert not db_reader._mode_allowed(away, "custom_kwh"), (
             f"{away} is billed by its operator — a helper of ours has no business pricing it")
+
+
+def test_a_charge_closed_after_an_outage_is_read_up_to_its_last_reading(car, monkeypatch):
+    # The cloud went quiet mid-charge and the car turned up on the road hours later; the helper reset
+    # once the cable came out. The session is known only up to its last reading, and so is the window.
+    db, rec, clock, _ = car
+    clock.poll(rec, _vd(40.0, charging=2, ts_ms=_ms("2026-09-15T04:00:00+00:00")))
+    clock.poll(rec, _vd(89.0, charging=2, ts_ms=_ms("2026-09-15T06:10:00+00:00")))
+    for _ in range(3):
+        rec.mark_offline()
+    clock.poll(rec, _vd(88.0, gear="D", speed=40.0, plug=False, odo=1010.0,
+                        ts_ms=_ms("2026-09-15T09:36:00+00:00")))
+    _setup(monkeypatch, db._conn)
+
+    def helper(eid, lo, hi):
+        end = datetime.fromisoformat(hi).timestamp()
+        return [(t, v) for t, v in ((_at("06:10"), 7.0), (_at("08:00"), 0.0)) if t <= end]
+
+    monkeypatch.setattr(ha_client, "get_history", helper)
+    charge = {**db._conn.execute("SELECT * FROM charges").fetchone(), "location_type": "HOME"}
+    assert db_reader.compute_cost(charge) == 1.68

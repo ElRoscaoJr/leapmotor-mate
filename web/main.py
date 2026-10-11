@@ -279,10 +279,10 @@ def _range_at_charge_target(range_km, soc):
     """Overview range estimate aimed at the car's charge limit (disc #266, @adoewa). A template GLOBAL,
     like absent_temps below, because status_card.html is rendered by several routes: a per-route value
     would reach one render and vanish from the rest. Reads the current car's REAL limit (the SoC it
-    stops at, never a value typed into Mate — see _configured_charge_limit) and hands db_reader the
-    pure extrapolation."""
+    stops at, never a value typed into Mate — see db_reader.configured_charge_limit) and hands
+    db_reader the pure extrapolation."""
     vehicle, _ = db_reader.get_vehicle()
-    limit = _configured_charge_limit((vehicle or {}).get("vin") or "")
+    limit = db_reader.configured_charge_limit((vehicle or {}).get("vin") or "")
     return db_reader.range_at_charge_target(range_km, soc, limit)
 
 
@@ -298,7 +298,7 @@ def _range_estimates(range_km, soc):
         return None
     
     vehicle, _ = db_reader.get_vehicle()
-    limit = _configured_charge_limit((vehicle or {}).get("vin") or "")
+    limit = db_reader.configured_charge_limit((vehicle or {}).get("vin") or "")
     
     # Always compute the estimate at 100%
     full_est = db_reader.range_at_charge_target(range_km, soc, 100)
@@ -706,7 +706,7 @@ async def overview(request: Request):
         last_position=_last_position(status, t),
         last_charge=charges[0] if charges else None,
         v2l=db_reader.get_v2l_status(),
-        charge_limit=_configured_charge_limit((vehicle or {}).get("vin") or ""),
+        charge_limit=db_reader.configured_charge_limit((vehicle or {}).get("vin") or ""),
         car_resp=db_reader.command_responsiveness(),
         battery_price=db_reader.current_blended_price(),   # #200 — must match /api/status-card
         data_link=None if _IS_DEMO else db_reader.data_link(status),   # demo runs no poller
@@ -1377,6 +1377,9 @@ async def set_charge_note(request: Request, charge_id: int):
 async def charges_page(request: Request, highlight: int = 0, station: str = "", back: str = "", month: str = ""):
     vehicle, _ = db_reader.get_vehicle()
     place_lookup.maybe_sweep()      # a charge that just ended gets its address without waiting for the timer
+    # Read before the history: a session that closes while the page is drawn then still reads as open, and
+    # the next poll of the live panel reloads the page; read after it, the history would stay stale for good.
+    session = db_reader.open_charge()
     stats   = db_reader.get_charge_stats()
     prices  = db_reader.get_charge_prices()
     status  = db_reader.get_latest_status()
@@ -1399,7 +1402,7 @@ async def charges_page(request: Request, highlight: int = 0, station: str = "", 
         page="charges", vehicle=vehicle,
         stats=stats, total=total, highlight=highlight, events_back=_events_back(back),
         charge_types=db_reader.charge_types_localised(), prices=prices,
-        status=status, live=live, ac_dc=db_reader.get_ac_dc_stats(),
+        status=status, live=live, session=session, ac_dc=db_reader.get_ac_dc_stats(),
         unconfirmed=db_reader.unconfirmed_charges_count(),
         unconfirmed_id=db_reader.newest_unconfirmed_charge_id(),   # the banner links to it
         station=station, station_info=station_info,
@@ -3308,10 +3311,9 @@ async def wallbox_profile_load(request: Request, profile_id: str):
     """Restore a saved wallbox profile as the active configuration and reload the page."""
     t = i18n.get_t(db_reader.get_language())
     profiles = _get_wallbox_profiles()
-    # Guard: refuse to switch while a charge is active (switching mid-charge would blend
+    # Guard: refuse to switch while a charge session is open (switching mid-charge would blend
     # two physical wallboxes into the same session's energy counter).
-    status = db_reader.get_latest_status()
-    if status and status.get("charging"):
+    if db_reader.open_charge():
         return templates.TemplateResponse(request, "partials/wallbox_profiles.html", _ctx(
             profiles=profiles,
             wb_profile_error=t("wb_profile_charging_blocked"),
@@ -4857,7 +4859,8 @@ async def clear_ui_password(request: Request):
 @app.get("/api/charging-live", response_class=HTMLResponse)
 async def charging_live(request: Request):
     status = db_reader.get_latest_status()
-    return templates.TemplateResponse(request, "partials/charging_live.html", _ctx(status=status))
+    return templates.TemplateResponse(request, "partials/charging_live.html",
+                                      _ctx(status=status, session=db_reader.open_charge()))
 
 
 @app.get("/api/battery-card", response_class=HTMLResponse)
@@ -4959,26 +4962,6 @@ async def v2l_card(request: Request):
                                       _ctx(v2l=db_reader.get_v2l_status()))
 
 
-def _configured_charge_limit(vin: str = "") -> int | None:
-    """The car's REAL max-charge limit — the SoC it will actually stop at — for the Overview hero's
-    "to X%" ETA label. It is `config["3"]["percent"]` exactly as the CAR reports it, captured by the
-    poll loop on every change (it tracks the app's slider "even when the limit is changed from the
-    official app", poller/main.py) and stored under the per-VIN key. So set the limit to 75 or 80 on
-    the car and the hero reads exactly that.
-
-    🔒 It is NEVER a value typed into Mate. The poll loop only ever writes the per-VIN key from the
-    car's own report; the shared (non-VIN) `charge_limit_percent` key is what Mate's Set-limit button
-    writes — a typed value — and is deliberately NOT consulted here. When the car hasn't reported a
-    limit yet, this is None → the template shows the remaining time with no target, never a guessed
-    100. → #33 (@pdifeo)."""
-    if not vin:
-        return None
-    try:
-        return int(db_reader.get_setting(f"charge_limit_percent_{vin.lower()}", "") or 0) or None
-    except (TypeError, ValueError):
-        return None
-
-
 def _charge_window() -> str:
     """"HH:MM – HH:MM" for the car's enabled charge window, else "" (#173). Read from the settings
     the poller caches — never a cloud call, so it costs nothing on a page that redraws every 30 s.
@@ -5004,7 +4987,7 @@ async def overview_hero(request: Request):
     status = db_reader.get_latest_status()
     vehicle, _ = db_reader.get_vehicle()
     return templates.TemplateResponse(request, "partials/overview_hero.html", _ctx(
-        status=status, vehicle=vehicle, charge_limit=_configured_charge_limit((vehicle or {}).get("vin") or ""),
+        status=status, vehicle=vehicle, charge_limit=db_reader.configured_charge_limit((vehicle or {}).get("vin") or ""),
     ))
 
 
