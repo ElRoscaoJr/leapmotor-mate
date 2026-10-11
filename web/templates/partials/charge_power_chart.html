@@ -33,9 +33,19 @@
   var el = document.getElementById('pc-{{ cid }}');
   if (!el || typeof ApexCharts === 'undefined' || typeof mateBandChart === 'undefined') return;
   if (el._c) { try { el._c.destroy(); } catch (e) {} }
-  var times = {{ times|tojson }};
   // The axis is categorical, so a hole in the recording gets blanks, as on the trip's chart.
-  var sp = mateBandChart.spread(times.map(function (t) { return new Date(t).getTime(); }));
+  var full = mateBandChart.spread({{ times|tojson }}.map(function (t) { return new Date(t).getTime(); }));
+  // No more slots than the chart has pixels (ApexCharts pays for every category): every K-th slot and the last,
+  // the readings either side of a hole and, where no K-th slot falls in it, its first blank, so a pause still breaks the line.
+  var K = Math.max(1, Math.ceil(full.at.length / (el.clientWidth || 300)));
+  function holeEnd(j) { while (j + 1 < full.at.length && full.at[j + 1] == null) j++; return j; }
+  var kept = full.at.map(function (_, j) { return j; }).filter(function (j) {
+    if (j % K === 0 || j === full.at.length - 1) return true;
+    var before = j > 0 && full.at[j - 1] == null, after = j + 1 < full.at.length && full.at[j + 1] == null;
+    if (full.at[j] != null) return before || after;
+    return !before && holeEnd(j) < j + K - j % K;
+  });
+  var sp = { slots: kept.map(function (j) { return full.slots[j]; }), at: kept.map(function (j) { return full.at[j]; }) };
   function col(arr) { return sp.at.map(function (i) { return i == null || arr[i] == null ? null : arr[i]; }); }
 
   // The axis and the hover box tell the time of day in Mate's zone, each moment at its own offset
