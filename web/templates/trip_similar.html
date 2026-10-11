@@ -14,7 +14,7 @@
   <div class="text-white text-sm font-medium">
     {{ trip.started_at | localdate if trip.started_at else '' }}
     <span class="text-slate-500 font-normal">
-      {{ trip.started_at[11:16] if trip.started_at else '' }} → {{ trip.ended_at[11:16] if trip.ended_at else '' }}
+      {{ trip.started_at[11:16] if trip.started_at else '' }} → {{ trip.ended_at|end_time(trip.started_at) if trip.ended_at else '' }}
     </span>
   </div>
   <div class="text-slate-500 text-xs mt-0.5">

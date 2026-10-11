@@ -37,8 +37,8 @@
     {% endif %}
     <div class="text-white text-sm font-medium">
       {{ trip.started_at[11:16] if trip.started_at else '—' }}
-      <span class="text-slate-500 font-normal text-xs ml-1">
-        → {{ trip.ended_at[11:16] if trip.ended_at else '' }}
+      <span class="text-slate-500 font-normal text-xs ml-1 whitespace-nowrap">
+        → {{ trip.ended_at|end_time(trip.started_at) if trip.ended_at else '' }}
       </span>
       {% if trip.is_merged %}<span style="font-size:10px" class="text-yellow-400" title="{{ trip.merged_count }} {{ t('merge_segments') }}">🔗</span>{% endif %}
       {% if trip.reconstructed %}<span style="font-size:10px" class="text-amber-400/90 ml-1" title="{{ t('trip_reconstructed_hint') }}">✨ {{ t('trip_reconstructed') }}</span>{% endif %}

@@ -429,7 +429,7 @@
           {% for segment in trip.additional_segment_notes %}
           <div class="border-t border-slate-700/70 pt-3">
             <div class="mb-1 text-xs font-medium text-slate-400">
-              {{ segment.started_at[11:16] }} &rarr; {{ segment.ended_at[11:16] }}
+              {{ segment.started_at[11:16] }} &rarr; {{ segment.ended_at|end_time(segment.started_at) }}
             </div>
             <div class="whitespace-pre-wrap break-words text-sm text-slate-200">{{ segment.note }}</div>
           </div>
