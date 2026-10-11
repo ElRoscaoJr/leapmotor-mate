@@ -1,6 +1,6 @@
 """A charge row in a real browser: on a phone and on a computer nothing sticks out of it and the curve beside it is
-a picture the browser drew; a click on the row opens the body under it and asks for the chart once, however often
-the row is opened and closed; the editors the row keeps (the type menu, 🆓, 🧭, ✏️, the place picker, the station's
+a picture the browser drew; a click on the row opens the body under it and asks for the chart once, wherever on the
+screen the body lands and however often the row is opened and closed; the editors the row keeps (the type menu, 🆓, 🧭, ✏️, the place picker, the station's
 link) and a tooltip's mark (🛣) do their own work and leave the row closed, a word typed in their fields or a
 click on their text included; Expand all, there while a row is closed, opens every row of the day, and Collapse
 all, there while one is open, closes them; a link to a charge opens its row; a note is written in the opened
@@ -83,8 +83,8 @@ def browser():
         pw.stop()
 
 
-def _open(browser, url, width=1280, highlight=1):
-    page = browser.new_page(viewport={"width": width, "height": 900})
+def _open(browser, url, width=1280, highlight=1, height=900):
+    page = browser.new_page(viewport={"width": width, "height": height})
     page.add_init_script(COUNT_CALENDAR_SWAPS)
     page.charts = []
     page.on("request", lambda r: "/power-chart" in r.url and page.charts.append(r.url))
@@ -172,13 +172,15 @@ def test_a_split_and_a_merge_leave_the_charges_row_open(browser, mate):
     assert page.locator('#charge-card-6 button[hx-post*="unmerge?parent=6"]').is_visible()
 
 
-def test_a_click_on_the_row_opens_it_and_asks_for_the_chart_once(browser, mate):
-    page = _open(browser, mate, highlight=2)
+def test_a_click_on_the_row_opens_it_and_asks_for_the_chart_once_wherever_its_body_lands(browser, mate):
+    """On a short screen (a phone) the opened body runs past the bottom edge, the chart at its end: it is asked
+    for on the opening, not once the reader happens to scroll to it."""
+    page = _open(browser, mate, highlight=2, height=360)
     asked = lambda: [u for u in page.charts if u.endswith("/api/charge/1/power-chart")]
     assert not _is_open(page, 1) and asked() == []
     page.locator("#charge-card-1 > summary").click()
     assert _is_open(page, 1)
-    page.locator("#pchart-1").scroll_into_view_if_needed()      # the chart is asked for once it is in view
+    assert page.locator("#pchart-1").evaluate("e => e.getBoundingClientRect().top > innerHeight"), "the chart's place is on screen; the case is moot"
     page.wait_for_function("() => document.querySelector('#pchart-1').innerText.trim() !== '…'")
     assert len(asked()) == 1
     page.locator("#charge-card-1 > summary").click()
