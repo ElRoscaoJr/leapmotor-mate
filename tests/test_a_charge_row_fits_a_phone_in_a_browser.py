@@ -1,8 +1,10 @@
 """A charge row in a real browser: on a phone and on a computer nothing sticks out of it and the curve beside it is
 a picture the browser drew; a click on the row opens the body under it and asks for the chart once, wherever on the
-screen the body lands and however often the row is opened and closed; the editors the row keeps (the type menu, 🆓, 🧭, ✏️, the place picker, the station's
+screen the body lands and however often the row is opened and closed; a row opened at the screen's bottom edge
+comes into view, whole where the screen has room for it, from its top where it has not, and one closed before its
+chart comes stays where it is; the editors the row keeps (the type menu, 🆓, 🧭, ✏️, the place picker, the station's
 link) and a tooltip's mark (🛣) do their own work and leave the row closed, a word typed in their fields or a
-click on their text included; Expand all, there while a row is closed, opens every row of the day, and Collapse
+click on their text included; Expand all, there while a row is closed, opens every row of the day where they are, and Collapse
 all, there while one is open, closes them; a link to a charge opens its row; a note is written in the opened
 row's foot and read there, and a note changed while its save is on its way stays open and unsaved; a merge or a
 split leaves the row of the charge open; an opened card's foot with every action fits a phone in four languages,
@@ -190,6 +192,59 @@ def test_a_click_on_the_row_opens_it_and_asks_for_the_chart_once_wherever_its_bo
     assert _is_open(page, 1) and len(asked()) == 1
 
 
+# Where a row is in the page's scrolling column: from the bars stuck to its top (no password set, in the tests)
+# and to its bottom edge.
+_IN_VIEW = """cid => { const c = document.getElementById('charge-card-' + cid).getBoundingClientRect(), main = document.querySelector('main');
+  const bars = [...main.children].filter(e => getComputedStyle(e).position === 'sticky').map(e => e.getBoundingClientRect().bottom);
+  return {top: Math.round(c.top - Math.max(main.getBoundingClientRect().top, ...bars)), below: Math.round(c.bottom - main.getBoundingClientRect().bottom)}; }"""
+
+
+def _at_the_bottom_edge(page, cid):
+    row = page.locator(f"#charge-card-{cid} > summary")
+    row.evaluate("""row => document.querySelector('main').scrollBy(
+      {top: row.getBoundingClientRect().bottom - innerHeight + 10, behavior: 'instant'})""")
+    assert -40 < page.evaluate(_IN_VIEW, cid)["below"] <= 0, "the row is not at the bottom edge; the case is moot"
+    return row
+
+
+@pytest.mark.parametrize("width, height", [(1280, 900), (390, 500)])
+def test_a_row_opened_at_the_screens_bottom_edge_comes_into_view(browser, mate, width, height):
+    """Whole, with its chart, where the screen has room for it; from its top where it has not."""
+    page = _open(browser, mate, width, highlight=2, height=height)
+    page.locator("#charge-card-2").evaluate("d => { d.open = false; }")
+    row = _at_the_bottom_edge(page, 1)
+    row.click(position={"x": 6, "y": row.bounding_box()["height"] - 6})   # its padding, clear of the bars at the top
+    page.wait_for_function("() => document.querySelector('#pchart-1').innerText.trim() !== '…'")
+    page.wait_for_function("""cid => new Promise(r => { const c = document.getElementById('charge-card-' + cid);
+      const y = c.getBoundingClientRect().top; setTimeout(() => r(c.getBoundingClientRect().top === y), 300); })""", arg=1)
+    place = page.evaluate(_IN_VIEW, 1)
+    if width == 1280:
+        assert place["top"] > 0 and -2 <= place["below"] <= 0, place   # no further than its bottom edge needs
+    else:
+        assert place["top"] == 0, place
+
+
+def test_a_row_closed_before_its_chart_comes_leaves_the_page_where_it_is(browser, mate):
+    """The chart asked for on the opening comes after the row was closed, the page scrolled elsewhere and the
+    day's rows opened again with Expand all, which moves nothing."""
+    page = _open(browser, mate, highlight=2)
+    page.locator("#charge-card-2").evaluate("d => { d.open = false; }")
+    held = []
+    page.route("**/api/charge/1/power-chart", lambda route: held.append(route))
+    row = _at_the_bottom_edge(page, 1)
+    row.click(position={"x": 6, "y": 6})
+    page.wait_for_function("() => document.querySelector('#pchart-1.htmx-request')")
+    row.click(position={"x": 6, "y": 6})
+    assert not _is_open(page, 1) and held
+    page.evaluate("document.querySelector('main').scrollTo({top: 0, behavior: 'instant'})")
+    page.locator("#charges-day-drawer [data-charges-all=open]").evaluate("b => b.click()")
+    assert _is_open(page, 1)
+    held[0].continue_()
+    page.wait_for_function("() => document.querySelector('#pchart-1').innerText.trim() !== '…'")
+    page.wait_for_timeout(500)
+    assert page.evaluate("document.querySelector('main').scrollTop") == 0
+
+
 def test_a_link_to_a_charge_opens_its_row(browser, mate):
     page = _open(browser, mate, highlight=2)
     assert _is_open(page, 2) and not _is_open(page, 1)
@@ -254,8 +309,11 @@ def test_expand_all_while_a_row_is_closed_collapse_all_while_one_is_open(browser
     shown = lambda: (expand.is_visible(), collapse.is_visible())
     page.wait_for_function("() => !document.querySelector('#charges-day-drawer [data-charges-all=close]').hidden")
     assert _is_open(page, 2) and not _is_open(page, 1) and shown() == (True, True), "the link's row came open"
+    scrolled = page.evaluate("document.querySelector('main').scrollTop")
     expand.click()
     assert _is_open(page, 1) and _is_open(page, 2) and shown() == (False, True)
+    page.wait_for_timeout(500)
+    assert page.evaluate("document.querySelector('main').scrollTop") == scrolled, "Expand all moves the page"
     collapse.click()
     assert not _is_open(page, 1) and not _is_open(page, 2) and shown() == (True, False)
     # A row opened by hand, clicked on its padding (the middle of a row may be one of its buttons): Collapse
