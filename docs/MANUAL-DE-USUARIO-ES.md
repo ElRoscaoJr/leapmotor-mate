@@ -1,8 +1,20 @@
 # LeapMotor Mate — Manual de usuario
 
-> **Versión de Mate:** v4.15.0 · **Idioma:** Español
+> **Versión de Mate:** v4.15.1 · **Idioma:** Español
 
-## Novedades de la versión 4.15.0
+## Novedades de la versión 4.15.1
+
+**Una carga termina cuando deja de entrar energía.** Después de una carga, con el cable enchufado, el
+coche mantiene abierta su sesión de carga un rato más. Mate termina ahora la carga cuando deja de entrar
+energía, así que su hora de fin y su duración son las de la carga en sí, y cuando la batería ha alcanzado
+el límite de carga fijado en el coche, el Resumen dice *Carga completada* en lugar de *Cargando*
+(#414, @arekm).
+
+**Una fila que termina otro día lo dice.** En los calendarios de Cargas y Trayectos, una carga o un
+trayecto que termina al día siguiente de empezar muestra ese día antes de su hora de fin, por ejemplo
+«23:05 → 09 oct 06:40» (#415, @arekm).
+
+### Novedades de la versión 4.15.0
 
 **Una carga se lee como un viaje.** En el calendario de Cargas cada carga es ahora una fila, con una
 miniatura de su curva al lado; un clic la abre debajo, con la energía, la temperatura de la batería, la

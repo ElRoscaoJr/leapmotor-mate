@@ -1,8 +1,19 @@
 # LeapMotor Mate — User Manual
 
-> **Mate version:** v4.15.0 · **Language:** English
+> **Mate version:** v4.15.1 · **Language:** English
 
-## New in 4.15.0
+## New in 4.15.1
+
+**A charge ends when the energy stops.** After a charge, with the cable in, a car keeps its charge
+session open for a while. Mate now ends the charge when the energy stops, so its end time and duration
+are those of the charge itself, and once the battery has reached the charge limit set in the car the
+Overview says *Charge complete* instead of *Charging* (#414, @arekm).
+
+**A row that ends on another day says which.** In the Charges and Trips calendars, a charge or a trip
+that ends on the day after it started shows that day before its end time, for example
+"23:05 → 09 Oct 06:40" (#415, @arekm).
+
+### New in 4.15.0
 
 **A charge reads like a trip.** In the Charges calendar each charge is now a row, with a thumbnail of
 its curve beside it; a click opens it underneath, with the energy, the battery's temperature, the

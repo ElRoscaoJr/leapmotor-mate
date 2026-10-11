@@ -1,8 +1,20 @@
 # LeapMotor Mate — Manuale utente
 
-> **Versione di Mate:** v4.15.0 · **Lingua:** Italiano
+> **Versione di Mate:** v4.15.1 · **Lingua:** Italiano
 
-## Novità della 4.15.0
+## Novità della 4.15.1
+
+**Una ricarica finisce quando smette di entrare energia.** Dopo una ricarica, con il cavo inserito,
+l'auto tiene aperta la sessione di carica ancora per un po'. Ora Mate chiude la ricarica quando l'energia
+smette di entrare, quindi l'ora di fine e la durata sono quelle della ricarica vera, e quando la batteria
+ha raggiunto il limite di carica impostato nell'auto la Panoramica dice *Carica completa* invece di
+*In ricarica* (#414, @arekm).
+
+**Una riga che finisce un altro giorno lo dice.** Nei calendari di Ricariche e Viaggi, una ricarica o un
+viaggio che finisce il giorno dopo l'inizio mostra quel giorno prima dell'ora di fine, per esempio
+«23:05 → 09 ott 06:40» (#415, @arekm).
+
+### Novità della 4.15.0
 
 **Una ricarica si legge come un viaggio.** Nel calendario delle Ricariche ogni ricarica è ora una riga,
 con accanto una miniatura della sua curva; un clic la apre sotto, con l'energia, la temperatura della

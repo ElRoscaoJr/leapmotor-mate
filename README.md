@@ -1,7 +1,7 @@
 # LeapMotor Mate
 
-**v4.15.0:** in the Charges calendar **a charge is a row that opens**, like a trip, with a thumbnail of its curve, and the calendar **opens several days** at once ([#412](https://github.com/ProtossBlaster/leapmotor-mate/pull/412), @arekm). The charging panel shows the power of a charge under 3 A ([#409](https://github.com/ProtossBlaster/leapmotor-mate/issues/409)), and a charge window saved on the Scheduling page shows on the Overview at once ([#395](https://github.com/ProtossBlaster/leapmotor-mate/issues/395)).
-See [release notes and upgrade impact](docs/releases/v4.15.0.md).
+**v4.15.1:** **a charge ends when the energy stops**, not minutes or hours later when the car closes its session, and a battery at the car's charge limit with the cable in reads **"Charge complete"** instead of "Charging" ([#414](https://github.com/ProtossBlaster/leapmotor-mate/pull/414), @arekm). A charge or a trip that ends on another day **says which day** ([#415](https://github.com/ProtossBlaster/leapmotor-mate/pull/415), @arekm). In **4.15.0**: a charge is a row that opens, like a trip ([#412](https://github.com/ProtossBlaster/leapmotor-mate/pull/412), @arekm).
+See [release notes and upgrade impact](docs/releases/v4.15.1.md).
 
 [![CI](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/ci.yml/badge.svg)](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/ci.yml)
 [![Docker](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/docker-publish.yml)
@@ -360,8 +360,8 @@ Works with any MQTT broker (e.g. the Mosquitto add‑on). Use **Test connection*
 
 # LeapMotor Mate · Italiano
 
-**v4.15.0:** nel calendario delle Ricariche **una ricarica è una riga che si apre**, come un viaggio, con la miniatura della sua curva, e il calendario **apre più giorni** insieme ([#412](https://github.com/ProtossBlaster/leapmotor-mate/pull/412), @arekm). Il pannello di carica mostra la potenza di una ricarica sotto i 3 A ([#409](https://github.com/ProtossBlaster/leapmotor-mate/issues/409)), e una finestra di ricarica salvata nella pagina Schedulazione si vede subito nella Panoramica ([#395](https://github.com/ProtossBlaster/leapmotor-mate/issues/395)).
-Vedi [note di rilascio e impatto dell'aggiornamento](docs/releases/v4.15.0.md#italiano).
+**v4.15.1:** **una ricarica finisce quando smette di entrare energia**, non minuti o ore dopo quando l'auto chiude la sessione, e una batteria al limite di carica dell'auto con il cavo inserito dice **«Carica completa»** invece di «In ricarica» ([#414](https://github.com/ProtossBlaster/leapmotor-mate/pull/414), @arekm). Una ricarica o un viaggio che finisce un altro giorno **dice quale giorno** ([#415](https://github.com/ProtossBlaster/leapmotor-mate/pull/415), @arekm). Nella **4.15.0**: una ricarica è una riga che si apre, come un viaggio ([#412](https://github.com/ProtossBlaster/leapmotor-mate/pull/412), @arekm).
+Vedi [note di rilascio e impatto dell'aggiornamento](docs/releases/v4.15.1.md#italiano).
 
 **Tracciamento viaggi, registro ricariche e controllo remoto per veicoli Leapmotor** — un companion self‑hosted (un *TeslaMate* per Leapmotor). Funziona come **add‑on di Home Assistant** o come **container Docker standalone**.
 

@@ -1,8 +1,20 @@
 # LeapMotor Mate — Manuel utilisateur
 
-> **Version de Mate :** v4.15.0 · **Langue :** Français
+> **Version de Mate :** v4.15.1 · **Langue :** Français
 
-## Nouveautés de la version 4.15.0
+## Nouveautés de la version 4.15.1
+
+**Une recharge se termine quand l'énergie cesse d'entrer.** Après une recharge, câble branché, la
+voiture garde sa session de charge ouverte encore un moment. Mate termine maintenant la recharge quand
+l'énergie cesse d'entrer : son heure de fin et sa durée sont celles de la recharge elle-même, et une fois
+la batterie arrivée à la limite de charge réglée dans la voiture, l'Aperçu affiche *Charge terminée* au
+lieu de *En charge* (#414, @arekm).
+
+**Une ligne qui se termine un autre jour le dit.** Dans les calendriers Recharges et Trajets, une
+recharge ou un trajet qui se termine le lendemain de son début affiche ce jour avant son heure de fin,
+par exemple « 23:05 → 09 oct 06:40 » (#415, @arekm).
+
+### Nouveautés de la version 4.15.0
 
 **Une recharge se lit comme un trajet.** Dans le calendrier des Recharges, chaque recharge est désormais
 une ligne, avec à côté une miniature de sa courbe ; un clic l'ouvre en dessous, avec l'énergie, la

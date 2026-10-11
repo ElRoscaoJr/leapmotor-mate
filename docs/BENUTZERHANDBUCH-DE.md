@@ -1,8 +1,20 @@
 # LeapMotor Mate — Benutzerhandbuch
 
-> **Mate-Version:** v4.15.0 · **Sprache:** Deutsch
+> **Mate-Version:** v4.15.1 · **Sprache:** Deutsch
 
-## Neu in Version 4.15.0
+## Neu in Version 4.15.1
+
+**Ein Ladevorgang endet, wenn keine Energie mehr fließt.** Nach dem Laden hält das Auto bei
+eingestecktem Kabel seine Ladesitzung noch eine Weile offen. Mate beendet den Ladevorgang jetzt, wenn
+keine Energie mehr fließt, sodass Endzeit und Dauer die des eigentlichen Ladens sind; sobald der Akku das
+im Auto eingestellte Ladelimit erreicht hat, zeigt die Übersicht *Laden abgeschlossen* statt *Lädt*
+(#414, @arekm).
+
+**Eine Zeile, die an einem anderen Tag endet, sagt an welchem.** In den Kalendern Ladevorgänge und
+Fahrten zeigt ein Ladevorgang oder eine Fahrt, die am Tag nach dem Beginn endet, diesen Tag vor der
+Endzeit, zum Beispiel „23:05 → 09 Okt 06:40" (#415, @arekm).
+
+### Neu in Version 4.15.0
 
 **Ein Ladevorgang liest sich wie eine Fahrt.** Im Kalender der Ladevorgänge ist jeder Ladevorgang jetzt
 eine Zeile, daneben ein kleines Bild seiner Kurve; ein Klick öffnet sie darunter, mit der Energie, der
