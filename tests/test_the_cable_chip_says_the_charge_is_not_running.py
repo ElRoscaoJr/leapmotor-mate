@@ -37,7 +37,7 @@ def test_a_held_cable_says_not_charging_and_the_car_parked(car):
 
 
 def test_a_completed_charge_says_so_on_the_chip(car):
-    car.frame(plug_connected=1, charge_completed=1, soc=100)
+    car.frame(plug_connected=1, soc=100)
     hero = car.get("/api/overview-hero")
     assert _chip(hero) == "Cable connected · 100% (Charge complete)"
     assert _word(hero) == "Parked"

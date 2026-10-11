@@ -405,10 +405,11 @@ def reev_tank_l(car_type: Optional[str] = None) -> float:
             car_type = ""
     return _REEV_TANK_L_BY_MODEL.get((car_type or "").strip().upper()[:3], _REEV_TANK_L)
 
-# REEV only: signal 3736 does not mean what its name says, so on a range-extender it is not read
-# at all.
+# Signal 3736 is named chargeCompleted, and no car seen sets it at a completed charge, so it is not read as
+# one. The official app interprets it as isHaveFullCharge and shows only a tip on it (with healthy charging
+# on, the charge must reach 100 % to calibrate the battery).
 #
-# It was mapped as "chargeCompleted" with the note "validate on a real charge". Nobody had. Nine
+# Its note said "validate on a real charge". Nobody had. Nine
 # complete charges over sixteen days from a B10 REEV (beta #12, michapr) say it is the opposite:
 #
 #   flag → 1   cable just connected, current −2.0…−3.8 A, 85 to 915 minutes remaining, SoC 15-76 %
@@ -424,14 +425,9 @@ def reev_tank_l(car_type: Optional[str] = None) -> float:
 # when a charge was nearly done and a user was most likely to look. A tolerance is the wrong shape
 # of fix for a signal read backwards.
 #
-# So on a REEV the flag is dropped. Mate says "plugged in", which is true in every frame of the
-# bundle, instead of a completion it cannot establish. Deriving a real "finished" is the next step
-# and needs one thing this data does not settle: a car plugged in and WAITING for a scheduled
-# charge also sits at flag 0, so the inverse reading alone would announce a completion for a charge
-# that never happened.
-#
-# BEVs are untouched. There is no BEV bundle carrying 3736, the flag may well be honest there, and
-# it is working today — this is not the moment to change it blind.
+# No BEV seen sets it either, so "Charge complete" is the battery at the car's limit (get_latest_status),
+# within a point: cars stop on it or a point under.
+_AT_THE_LIMIT_PCT = 1.0
 
 
 def _reev_engine_on(db, vehicle_id, started_at, ended_at) -> Optional[dict]:
@@ -3970,10 +3966,10 @@ def upsert_vehicle(vin: str, car_type: str) -> None:
 
 def configured_charge_limit(vin: str = "") -> int | None:
     """The car's REAL max-charge limit — the SoC it will actually stop at — for the Overview hero's
-    "to X%" ETA label. It is `config["3"]["percent"]` exactly as the CAR reports it, captured by the
-    poll loop on every change (it tracks the app's slider "even when the limit is changed from the
-    official app", poller/main.py) and stored under the per-VIN key. So set the limit to 75 or 80 on
-    the car and the hero reads exactly that.
+    "to X%" ETA label and for "Charge complete". It is `config["3"]["percent"]` exactly as the CAR
+    reports it, captured by the poll loop on every change (it tracks the app's slider "even when the
+    limit is changed from the official app", poller/main.py) and stored under the per-VIN key. So set
+    the limit to 75 or 80 on the car and the hero reads exactly that.
 
     🔒 It is NEVER a value typed into Mate. The poll loop only ever writes the per-VIN key from the
     car's own report; the shared (non-VIN) `charge_limit_percent` key is what Mate's Set-limit button
@@ -4340,13 +4336,9 @@ def get_latest_status() -> Optional[dict]:
     # (modes persist when off). The old derive-by-absence wrongly lit up for plain A/C-on / AUTO
     # (mode 0 = A/C on but not yet cooling) — confirmed on-car 2026-06-21.
     d["climate_venting"] = bool(d.get("climate_on")) and d.get("climate_mode") == 4
-    # REEV only: drop the car's "charge complete" flag entirely — on a range-extender it marks a
-    # charge in PROGRESS, not a finished one (see the note beside this file's constants). The raw
-    # value is kept under another name so a diagnostics bundle still shows what the car said.
-    # Pure EVs are untouched.
-    if is_reev_car():
-        d["charge_completed_raw"] = 1 if d.get("charge_completed") else 0
-        d["charge_completed"] = 0
+    # Signal 3736 is no "charge complete" (see the note beside this file's constants): kept for the
+    # diagnostics bundle, and the completion is worked out below once the cable is known.
+    d["charge_completed_raw"] = 1 if d.get("charge_completed") else 0
     # How long ago
     try:
         ts = datetime.fromisoformat(d["recorded_at"])
@@ -4365,6 +4357,11 @@ def get_latest_status() -> Optional[dict]:
             d["last_seen"] = f"{delta // 3600}h ago"
     except Exception:
         d["last_seen"] = "unknown"
+    # The battery at the car's own limit (assumed 100 % if it reports none), and current going into it.
+    car = db.execute("SELECT vin FROM vehicles WHERE id=?", (d["vehicle_id"],)).fetchone()
+    limit = configured_charge_limit(car["vin"] if car else "") or 100
+    at_limit = d.get("soc") is not None and d["soc"] >= limit - _AT_THE_LIMIT_PCT
+    current_in = (d.get("charge_current_a") or 0) <= -_CHARGE_SAMPLE_MIN_A
     # A charge already running does not vanish from the screen because the current dipped (#307).
     # `charging` on a position row is the poll's own answer, and it comes from `_is_charging`, which
     # refuses a pack current below `charge_detect_min_a`. That threshold exists to notice a charge
@@ -4386,6 +4383,8 @@ def get_latest_status() -> Optional[dict]:
     parked = (d.get("gear") or "P") == "P" and (d.get("speed_kmh") or 0) <= 1
     d["cable_connected"] = None if d.get("plug_connected") is None else bool(
         d["plug_connected"] or (d.get("ac_port_mode") == 1 and parked))
+    # Complete: cable in, nothing flowing, the battery at the car's limit.
+    d["charge_completed"] = bool(d["cable_connected"] and not d.get("charging") and not current_in and at_limit)
     _data_age(d)
     # How old the POSITION is: the fix's own, when the map falls back to one — the poll without a
     # fix is seconds old, the position it falls back to may be days old.

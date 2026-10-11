@@ -990,7 +990,8 @@ estado en directo:
 - cuando el coche está **cargando**, una **animación** muestra el flujo de energía y una etiqueta con
   el tiempo estimado «hasta el X %» (X = el límite de carga que hayas puesto en el coche);
 - una etiqueta **«Cable conectado (Sin cargar / Carga completada)»** cuando el cable está enchufado pero no está
-  cargando de verdad. A su lado, si tienes una **carga programada**, aparece la franja del propio
+  cargando de verdad; *Carga completada* cuando la batería ha llegado al límite de carga fijado en el
+  coche. A su lado, si tienes una **carga programada**, aparece la franja del propio
   coche (por ejemplo **«Carga 01:50 – 12:00»**) — la respuesta a «el cable está puesto, ¿por qué no
   carga?».
 

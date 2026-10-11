@@ -941,7 +941,8 @@ status:
 - when the car is **charging**, an **animation** shows the energy flow and a tag with the estimated
   time "to X%" (X = the charge limit you set in the car);
 - a **"Cable connected (Not charging / Charge complete)"** tag when the cable is plugged in but it isn't actively
-  charging. Beside it, if you have set a **scheduled charge**, the car's own window appears (for
+  charging; *Charge complete* once the battery has reached the charge limit set in the car. Beside it, if
+  you have set a **scheduled charge**, the car's own window appears (for
   example **"Charge 01:50 – 12:00"**) — the answer to "the cable is in, so why isn't it charging?".
 
 When the car is **powering an external device through the V2L (vehicle-to-load) adapter**, the
