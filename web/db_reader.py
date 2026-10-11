@@ -4371,8 +4371,9 @@ def get_latest_status() -> Optional[dict]:
     # on a frame two seconds old, with the session open and the state machine still in CHARGING.
     # The same "one threshold, two jobs" as the 0.00 kW power reading (v3.18.3); this is its half.
     # The cable is the guard: unplugged, the answer is the poll's again, so a session left open by
-    # any other defect cannot print "charging" for ever.
-    if not d.get("charging") and d.get("plug_connected"):
+    # any other defect cannot print "charging" for ever. At the car's limit with no current going in
+    # the charge is over, not dipping: the car ends its session some time after the energy stops.
+    if not d.get("charging") and d.get("plug_connected") and (current_in or not at_limit):
         open_charge = db.execute(
             "SELECT 1 FROM charges WHERE vehicle_id = COALESCE(?, vehicle_id) "
             "AND ended_at IS NULL LIMIT 1", (_current_vehicle_id(),)).fetchone()

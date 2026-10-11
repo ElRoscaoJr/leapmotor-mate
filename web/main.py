@@ -1377,6 +1377,9 @@ async def set_charge_note(request: Request, charge_id: int):
 async def charges_page(request: Request, highlight: int = 0, station: str = "", back: str = "", month: str = ""):
     vehicle, _ = db_reader.get_vehicle()
     place_lookup.maybe_sweep()      # a charge that just ended gets its address without waiting for the timer
+    # Read before the history: a session that closes while the page is drawn then still reads as open, and
+    # the next poll of the live panel reloads the page; read after it, the history would stay stale for good.
+    session = db_reader.open_charge()
     stats   = db_reader.get_charge_stats()
     prices  = db_reader.get_charge_prices()
     status  = db_reader.get_latest_status()
@@ -1399,7 +1402,7 @@ async def charges_page(request: Request, highlight: int = 0, station: str = "", 
         page="charges", vehicle=vehicle,
         stats=stats, total=total, highlight=highlight, events_back=_events_back(back),
         charge_types=db_reader.charge_types_localised(), prices=prices,
-        status=status, live=live, ac_dc=db_reader.get_ac_dc_stats(),
+        status=status, live=live, session=session, ac_dc=db_reader.get_ac_dc_stats(),
         unconfirmed=db_reader.unconfirmed_charges_count(),
         unconfirmed_id=db_reader.newest_unconfirmed_charge_id(),   # the banner links to it
         station=station, station_info=station_info,
@@ -3308,10 +3311,9 @@ async def wallbox_profile_load(request: Request, profile_id: str):
     """Restore a saved wallbox profile as the active configuration and reload the page."""
     t = i18n.get_t(db_reader.get_language())
     profiles = _get_wallbox_profiles()
-    # Guard: refuse to switch while a charge is active (switching mid-charge would blend
+    # Guard: refuse to switch while a charge session is open (switching mid-charge would blend
     # two physical wallboxes into the same session's energy counter).
-    status = db_reader.get_latest_status()
-    if status and status.get("charging"):
+    if db_reader.open_charge():
         return templates.TemplateResponse(request, "partials/wallbox_profiles.html", _ctx(
             profiles=profiles,
             wb_profile_error=t("wb_profile_charging_blocked"),
@@ -4857,7 +4859,8 @@ async def clear_ui_password(request: Request):
 @app.get("/api/charging-live", response_class=HTMLResponse)
 async def charging_live(request: Request):
     status = db_reader.get_latest_status()
-    return templates.TemplateResponse(request, "partials/charging_live.html", _ctx(status=status))
+    return templates.TemplateResponse(request, "partials/charging_live.html",
+                                      _ctx(status=status, session=db_reader.open_charge()))
 
 
 @app.get("/api/battery-card", response_class=HTMLResponse)

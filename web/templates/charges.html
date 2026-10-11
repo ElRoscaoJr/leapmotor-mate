@@ -632,20 +632,21 @@ document.body.addEventListener('chargeOpen', function (e) {
   }, true);
 })();
 
-// Auto-refresh the history when a charge completes. The live panel (#charging-live-panel) polls
-// every 30s; when its state flips charging→not-charging a charge has just ended, so reload once to
-// surface the new completed-charge card + updated totals.
+// Auto-refresh the history when the car ends its charge session. The live panel (#charging-live-panel)
+// polls every 30s and carries the open session; once it is gone the charge is in the history, so reload
+// once to surface the new completed-charge card + updated totals. Not the charging flag: that goes off
+// once the battery is full, while the car still holds the session open and the charge is not filed yet.
 (function () {
-  const isCharging = () => {
+  const session = () => {
     const m = document.getElementById('charging-state');
-    return m ? m.dataset.charging === 'true' : null;
+    return m ? m.dataset.session : null;
   };
-  let wasCharging = isCharging();
+  let was = session();
   document.body.addEventListener('htmx:afterSwap', (e) => {
     if (e.target && e.target.id === 'charging-live-panel') {
-      const now = isCharging();
-      if (wasCharging === true && now === false) location.reload();
-      wasCharging = now;
+      const now = session();
+      if (was && now === '') location.reload();
+      was = now;
     }
   });
 })();
