@@ -1,8 +1,22 @@
 # LeapMotor Mate — Benutzerhandbuch
 
-> **Mate-Version:** v4.15.2 · **Sprache:** Deutsch
+> **Mate-Version:** v4.15.3 · **Sprache:** Deutsch
 
-## Neu in Version 4.15.2
+## Neu in Version 4.15.3
+
+**Die Wallbox-Linie bleibt beim Ladevorgang.** Mit aktivierter Wallbox und eingerichtetem Home
+Assistant speichert Mate jetzt die Messwerte der Wallbox zu jedem Ladevorgang zu Hause. Die grüne Linie
+*Wallbox (AC)* im Diagramm verschwindet daher nicht mehr, wenn Home Assistant seinen Verlauf löscht,
+und das Diagramm öffnet sich schneller. Einmalig nach dem Update werden die Linien früherer
+Ladevorgänge aus dem übernommen, was Home Assistant noch gespeichert hat (#419, @arekm).
+
+**Ein Helper für eigene kWh in Wh.** Mit der Preisart *Eigene kWh (Home Assistant)* wird ein
+Home-Assistant-Helper, der Wh meldet, jetzt in kWh abgerechnet (#419).
+
+**Uhrzeiten der Diagramme auf dem Handy.** Auf dem Handy überlappen sich die Uhrzeiten unter dem
+Diagramm eines Ladevorgangs oder einer Fahrt nicht mehr.
+
+### Neu in Version 4.15.2
 
 **Das Diagramm eines Ladevorgangs kommt mit dem Öffnen der Zeile.** Im Kalender Ladevorgänge wird das
 Diagramm eines Ladevorgangs angefordert, sobald Sie seine Zeile öffnen, auch auf dem Handy, wo es unter

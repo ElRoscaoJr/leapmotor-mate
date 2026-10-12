@@ -1,8 +1,22 @@
 # LeapMotor Mate — Manual de usuario
 
-> **Versión de Mate:** v4.15.2 · **Idioma:** Español
+> **Versión de Mate:** v4.15.3 · **Idioma:** Español
 
-## Novedades de la versión 4.15.2
+## Novedades de la versión 4.15.3
+
+**La línea de la wallbox se queda con la carga.** Con la wallbox activada y Home Assistant
+configurado, Mate guarda ahora las lecturas de la wallbox de cada carga en casa, así que la línea verde
+*Wallbox (CA)* de su gráfico ya no desaparece cuando Home Assistant borra su historial, y el gráfico se
+abre más rápido. Una sola vez después de la actualización, las líneas de las cargas anteriores se
+copian de lo que Home Assistant todavía conserva (#419, @arekm).
+
+**Un helper de kWh personalizados en Wh.** Con el precio *kWh personalizados (Home Assistant)*, un
+helper que da Wh ahora se cobra en kWh (#419).
+
+**Las horas de los gráficos en el móvil.** En el móvil, las horas bajo el gráfico de una carga o de un
+viaje ya no se superponen.
+
+### Novedades de la versión 4.15.2
 
 **El gráfico de una carga llega al abrir su fila.** En el calendario de Cargas, el gráfico de una carga
 se pide en cuanto abres su fila, también en el móvil, donde queda debajo del borde de la pantalla, y

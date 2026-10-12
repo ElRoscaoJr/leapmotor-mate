@@ -1,8 +1,22 @@
 # LeapMotor Mate — Manuale utente
 
-> **Versione di Mate:** v4.15.2 · **Lingua:** Italiano
+> **Versione di Mate:** v4.15.3 · **Lingua:** Italiano
 
-## Novità della 4.15.2
+## Novità della 4.15.3
+
+**La linea della wallbox resta con la ricarica.** Con la wallbox attiva e Home Assistant configurato,
+Mate ora conserva le letture della wallbox di ogni ricarica di casa, così la linea verde *Wallbox (AC)*
+del suo grafico non sparisce più quando Home Assistant cancella il suo storico, e il grafico si apre
+più in fretta. Una volta sola dopo l'aggiornamento, le linee delle ricariche precedenti vengono copiate
+da quello che Home Assistant ha ancora (#419, @arekm).
+
+**Un helper «kWh personalizzati» in Wh.** Con il prezzo *kWh personalizzati (Home Assistant)*, un
+helper che riporta i Wh ora viene prezzato in kWh (#419).
+
+**Le ore dei grafici sul telefono.** Sul telefono, le ore sotto il grafico di una ricarica o di un
+viaggio non si sovrappongono più.
+
+### Novità della 4.15.2
 
 **Il grafico di una ricarica arriva quando apri la riga.** Nel calendario delle Ricariche, il grafico di
 una ricarica viene chiesto appena apri la sua riga, anche sul telefono dove sta sotto il bordo dello

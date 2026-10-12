@@ -1,8 +1,22 @@
 # LeapMotor Mate — Manuel utilisateur
 
-> **Version de Mate :** v4.15.2 · **Langue :** Français
+> **Version de Mate :** v4.15.3 · **Langue :** Français
 
-## Nouveautés de la version 4.15.2
+## Nouveautés de la version 4.15.3
+
+**La ligne de la wallbox reste avec la recharge.** Avec la wallbox activée et Home Assistant
+configuré, Mate conserve désormais les mesures de la wallbox de chaque recharge à domicile : la ligne
+verte *Wallbox (AC)* de son graphique ne disparaît plus quand Home Assistant efface son historique, et
+le graphique s'ouvre plus vite. Une seule fois après la mise à jour, les lignes des recharges
+précédentes sont copiées à partir de ce que Home Assistant conserve encore (#419, @arekm).
+
+**Une aide (helper) de kWh personnalisés en Wh.** Avec le tarif *kWh personnalisés (Home Assistant)*,
+une aide qui indique des Wh est désormais facturée en kWh (#419).
+
+**Les heures des graphiques sur téléphone.** Sur un téléphone, les heures sous le graphique d'une
+recharge ou d'un trajet ne se chevauchent plus.
+
+### Nouveautés de la version 4.15.2
 
 **Le graphique d'une recharge arrive à l'ouverture de sa ligne.** Dans le calendrier des Recharges, le
 graphique d'une recharge est demandé dès que vous ouvrez sa ligne, même sur un téléphone où il se trouve

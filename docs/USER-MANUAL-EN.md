@@ -1,8 +1,22 @@
 # LeapMotor Mate — User Manual
 
-> **Mate version:** v4.15.2 · **Language:** English
+> **Mate version:** v4.15.3 · **Language:** English
 
-## New in 4.15.2
+## New in 4.15.3
+
+**The wallbox's line stays with the charge.** With the wallbox enabled and Home Assistant configured,
+Mate now keeps the wallbox's readings of every home charge, so the green *Wallbox (AC)* line of its
+chart no longer disappears when Home Assistant purges its history, and the chart opens faster. Once
+after the update, the lines of earlier charges are copied from what Home Assistant still holds
+(#419, @arekm).
+
+**A custom-kWh helper in Wh.** With the *Custom kWh (Home Assistant)* pricing, a helper that reports
+in Wh is now priced in kWh (#419).
+
+**Chart times on a phone.** On a phone, the times under a charge's or a trip's chart no longer run
+into each other.
+
+### New in 4.15.2
 
 **A charge's chart comes as its row opens.** In the Charges calendar, the chart of a charge is asked
 for as soon as you open its row, also on a phone where it lies below the screen's edge, and it draws at
