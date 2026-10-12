@@ -132,6 +132,14 @@
       }
       // Two carrier series hold the labelled axes, so switching a line off never moves the plot.
       var axisRange = { min: 0, max: nb, tickAmount: 5 * nb };
+      // As many time labels as the axis is wide for, up to six intervals: the library leaves labels that run into
+      // each other where they are on this axis, and a phone's chart is a third as wide as a computer's. The axis is
+      // the chart's width less the two scales' columns and the padding (122 px); it may print one label more than
+      // the intervals asked for, so each label is given an interval of its own width and 12 px.
+      var longest = labels.reduce(function (a, l) { return String(l).length > a.length ? String(l) : a; }, '');
+      var pen = render.pen || (render.pen = document.createElement('canvas').getContext('2d'));
+      pen.font = '10px ' + getComputedStyle(el).fontFamily;
+      var xTicks = Math.max(1, Math.min(6, Math.floor(((el.clientWidth || 300) - 122) / (pen.measureText(longest).width + 12)) - 1));
       var series = [{ name: '_left', type: 'line', data: labels.map(function () { return null; }) },
                     { name: '_right', type: 'line', data: labels.map(function () { return null; }) }];
       var colors = ['transparent', 'transparent'], widths = [0, 0], dashes = [0, 0];
@@ -174,7 +182,7 @@
         dataLabels: { enabled: false },
         markers: { size: 0 },
         annotations: { xaxis: opts.annotations || [], yaxis: lines },
-        xaxis: { categories: labels, tickAmount: 6, tooltip: { enabled: false },
+        xaxis: { categories: labels, tickAmount: xTicks, tooltip: { enabled: false },
                  labels: { style: { colors: '#64748b', fontSize: '10px' }, rotate: 0, hideOverlappingLabels: true },
                  axisBorder: { show: false }, axisTicks: { show: false } },
         yaxis: yaxis,
