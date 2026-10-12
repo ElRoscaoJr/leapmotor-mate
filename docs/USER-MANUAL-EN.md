@@ -22,7 +22,7 @@ every row of the day. Shift-click, drag or hold a day to open several days at on
 the range and of each day (#412, @arekm).
 
 **The power of a slow charge.** *Charging status* on the Charges page and the charging chip on the
-Overview now show the power of a charge under 3 A too, which on an 800 V car is a home charge under
+Overview now show the power of a charge under 3 A too, which on a C10, at about 720 V, is a home charge under
 about 2.2 kW: they read 0.00 kW before (#409).
 
 **A schedule saved here shows at once.** After a charge window you save on the *Scheduling* page and

@@ -24,7 +24,7 @@ maintenant un jour, on ouvre plusieurs jours à la fois, avec les totaux de la p
 (#412, @arekm).
 
 **La puissance d'une recharge lente.** *État de charge* sur la page Recharges et la recharge en cours dans
-l'Aperçu affichent maintenant aussi la puissance d'une recharge sous 3 A, ce qui sur une voiture en 800 V
+l'Aperçu affichent maintenant aussi la puissance d'une recharge sous 3 A, ce qui sur une C10, à environ 720 V,
 est une recharge à domicile sous environ 2,2 kW : ils affichaient 0,00 kW (#409).
 
 **Une programmation enregistrée ici s'affiche tout de suite.** Après une plage de recharge enregistrée sur

@@ -23,7 +23,7 @@ del día. Con Mayús-clic, arrastrando o manteniendo pulsado un día se abren va
 totales del intervalo y de cada día (#412, @arekm).
 
 **La potencia de una carga lenta.** *Estado de la carga* en la página Cargas y la carga en curso en el
-Resumen muestran ahora también la potencia de una carga por debajo de 3 A, que en un coche de 800 V es
+Resumen muestran ahora también la potencia de una carga por debajo de 3 A, que en un C10, a unos 720 V, es
 una carga en casa por debajo de unos 2,2 kW: antes decían 0,00 kW (#409).
 
 **Una programación guardada aquí se ve enseguida.** Tras una ventana de carga guardada en la página

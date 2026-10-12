@@ -23,7 +23,7 @@ le righe del giorno. Con Maiusc-clic, trascinando o tenendo premuto un giorno se
 insieme, con i totali dell'intervallo e di ogni giorno (#412, @arekm).
 
 **La potenza di una ricarica lenta.** *Stato di carica* nella pagina Ricariche e la ricarica in corso
-nella Panoramica mostrano ora anche la potenza di una ricarica sotto i 3 A, che su un'auto a 800 V è
+nella Panoramica mostrano ora anche la potenza di una ricarica sotto i 3 A, che su una C10, a circa 720 V, è
 una ricarica di casa sotto circa 2,2 kW: prima dicevano 0,00 kW (#409).
 
 **Una programmazione salvata qui si vede subito.** Dopo una finestra di ricarica salvata nella pagina

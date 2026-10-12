@@ -23,7 +23,7 @@ den Aktionen. *Alle aufklappen* öffnet alle Zeilen des Tages. Mit Umschalt-Klic
 eines Tages öffnest du mehrere Tage zugleich, mit den Summen des Zeitraums und jedes Tages (#412, @arekm).
 
 **Die Leistung einer langsamen Ladung.** *Ladestatus* auf der Seite Ladevorgänge und die laufende Ladung
-in der Übersicht zeigen jetzt auch die Leistung einer Ladung unter 3 A, was bei einem 800-V-Auto eine
+in der Übersicht zeigen jetzt auch die Leistung einer Ladung unter 3 A, was bei einem C10 mit etwa 720 V eine
 Ladung zu Hause unter etwa 2,2 kW ist: vorher stand dort 0,00 kW (#409).
 
 **Ein hier gespeicherter Zeitplan erscheint sofort.** Nachdem du auf der Seite *Planung* ein Ladefenster
