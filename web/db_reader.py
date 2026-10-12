@@ -8718,6 +8718,19 @@ def _wallbox_sample_kinds() -> dict[str, str]:
 WALLBOX_SAMPLE_KINDS = _wallbox_sample_kinds()
 
 
+def wallbox_power_samples(lo: str, hi: str) -> list[tuple[float, float]]:
+    """The wallbox's power as the poller read it from `lo` to `hi` (raw UTC ISO, as positions are stamped), as
+    sorted (epoch, value): the shape ha_client.get_history gives, so a line drawn from Home Assistant's history
+    draws from here unchanged. Empty for a charge none were kept for."""
+    import ha_client
+    kind = WALLBOX_SAMPLE_KINDS["power"]
+    rows = _get().execute(
+        "SELECT recorded_at, value FROM ha_samples WHERE vehicle_id = COALESCE(?, vehicle_id) AND kind = ? "
+        "AND recorded_at >= ? AND recorded_at <= ? ORDER BY recorded_at",
+        (_current_vehicle_id(), kind, lo, hi)).fetchall()
+    return [(ha_client.epoch(r["recorded_at"]), r["value"]) for r in rows]
+
+
 def home_or_unconfirmed_charges_without_wallbox_samples() -> list[sqlite3.Row]:
     """Finished charges at home, or not typed yet (no type, or the old "MANUAL") and so maybe at home, a merged
     group's parent and not its pieces, with no wallbox reading kept over their span: the ones from before Mate

@@ -19,6 +19,7 @@ import db_reader
 import ha_client
 import main
 from test_the_cable_shows_while_the_charger_holds import car  # noqa: F401  (car: fixture)
+from test_the_charge_chart_draws_the_wallbox_from_mates_samples import _wallbox_line
 
 _read_history = ha_client.read_history          # the real one, for the test that answers at the transport
 
@@ -213,3 +214,11 @@ def test_a_database_locked_at_the_start_does_not_stop_the_web(monkeypatch):
     monkeypatch.setattr(db_reader, "set_setting", locked)
 
     main._maybe_keep_earlier_wallbox_lines()
+
+
+def test_a_charge_confirmed_as_home_after_the_sweep_draws_its_kept_line(charges, car):
+    _finished_charge(car, 6, UNCONFIRMED, None)
+    main._keep_earlier_wallbox_lines()
+    with sqlite3.connect(db_reader.DB_PATH) as c:
+        c.execute("UPDATE charges SET location_type = 'HOME' WHERE id = 6")
+    assert _wallbox_line(car.get("/api/charge/6/power-chart")) == "[7.0,7.0,7.2]"

@@ -3569,7 +3569,7 @@ async def wallbox_compare_chart(request: Request):
         return HTMLResponse('<div class="text-sm text-slate-500 py-2">—</div>')
     curve = db_reader.get_charge_power_curve(cid)
     home = db_reader.is_home_charge(cid)
-    wb_power = await run_in_threadpool(_wallbox_overlay, curve, home)   # it may read Home Assistant
+    wb_power = _wallbox_overlay(curve, home)
     return templates.TemplateResponse(request, "partials/charge_power_chart.html", _ctx(
         cid=cid, wb_power=wb_power, **curve))
 
@@ -3878,17 +3878,15 @@ async def set_manual_charge_location(request: Request, charge_id: int):
 
 
 def _wallbox_overlay(curve: dict, home: bool) -> list | None:
-    """Wallbox power (from HA history) resampled onto the car curve's timestamps,
-    so it overlays the car's DC power on the same axis. None when unavailable.
+    """Wallbox power as Mate kept it, held onto the car curve's timestamps,
+    so it overlays the car's DC power on the same axis. None when none was kept.
     Only a charge at home gets the overlay — on a public/away charge the home wallbox
     is irrelevant (and could even be charging another car); the caller says which it is."""
     times = curve.get("times") or []
-    mapping = ha_client.get_mapping()
     wallbox_on = db_reader.get_setting("wallbox_enabled", "0") == "1"
-    if (not wallbox_on or not times or not ha_client.is_configured()
-            or not mapping.get("power") or not home or ha_client.recently_unreachable()):
+    if not wallbox_on or not times or not home:
         return None
-    hist = ha_client.get_history(mapping["power"], times[0], times[-1])
+    hist = db_reader.wallbox_power_samples(times[0], times[-1])
     if not hist:
         return None
     out = ha_client.step_hold(times, hist)
@@ -4046,7 +4044,7 @@ async def charge_power_chart(request: Request, charge_id: int):
     its delivered AC power is drawn beside the car's DC power."""
     curve = db_reader.get_charge_power_curve(charge_id)
     home = db_reader.is_home_charge(charge_id)
-    wb_power = await run_in_threadpool(_wallbox_overlay, curve, home)   # it may read Home Assistant
+    wb_power = _wallbox_overlay(curve, home)
     return templates.TemplateResponse(request, "partials/charge_power_chart.html", _ctx(
         cid=charge_id, wb_power=wb_power, facts=_charge_facts(curve), **curve))
 
