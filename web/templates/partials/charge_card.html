@@ -145,10 +145,10 @@
     {% endif %}
   {% endif %}
 
-  {# The chart, fetched when the opened row first scrolls into view; closed, the body is not laid
-     out, so nothing is asked for a row nobody opens. #}
+  {# The chart, fetched once: when the row is opened, wherever on the screen its body lands, or when a row
+     already open (a link to the charge) scrolls into view; nothing is asked for a row nobody opens. #}
   <div id="pchart-{{ c.id }}" class="mt-3"
-       hx-get="api/charge/{{ c.id }}/power-chart" hx-trigger="intersect once" hx-swap="innerHTML">
+       hx-get="api/charge/{{ c.id }}/power-chart" hx-trigger="intersect once, toggle once from:closest details" hx-swap="innerHTML">
     <div class="text-xs text-slate-500 py-2">…</div>
   </div>
 
