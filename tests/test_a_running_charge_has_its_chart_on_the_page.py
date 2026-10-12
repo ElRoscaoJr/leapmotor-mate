@@ -23,13 +23,17 @@ import pytest
 from starlette.testclient import TestClient
 
 VIN = "LVIN0000000000001"
-# Three minutes ago, so the polls the fixture records are fresh: a card is LIVE only on fresh readings.
-PLUGGED_IN = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=3)).replace(microsecond=0)
+# Three minutes before each test, so the polls the fixture records are fresh: a card is LIVE only on
+# readings under five minutes old. Set by `car` as each test starts: taken once at import, it aged with
+# the suite, and a test reached four minutes into a run read stale and lost its LIVE (CI of #418).
+PLUGGED_IN = None
 
 
 @pytest.fixture
 def car(tmp_path, monkeypatch):
     """A car plugged in three minutes ago from 77.1 %; `car.polls(n)` records the next n polls of the charge."""
+    global PLUGGED_IN
+    PLUGGED_IN = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=3)).replace(microsecond=0)
     path = str(tmp_path / "t.db")
     c = D.Database(path)._conn
     c.execute("INSERT INTO vehicles (id, vin, car_type) VALUES (1,?,'B10')", (VIN,))
