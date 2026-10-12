@@ -4,16 +4,12 @@ card is there only for a charge in progress,
 and only once it has two readings to draw; a finished charge leaves the panel empty, and its chart is
 where it always was, under the card. The wallbox's line is drawn while the charge runs when the charge
 is at home: typed HOME at its start, or the wallbox delivering power while the car is plugged in.
-Either chart reads the wallbox's history off the event loop, so a Home Assistant out of reach holds
-that chart alone, never every other request of the app; and one that just failed to answer is not
-asked again by the next chart for a minute, so a page of charts does not wait its timeout once each.
+The panel reads the wallbox's power off the event loop, so a Home Assistant out of reach holds that
+panel alone, never every other request of the app.
 """
 import asyncio
 import datetime as dt
-import io
 import re
-import urllib.error
-import urllib.response
 from types import SimpleNamespace
 
 import db as D
@@ -131,17 +127,15 @@ def test_a_finished_charge_leaves_the_panel_empty(car):
 
 
 def _wallbox(monkeypatch, car, power_kw):
-    """A wallbox mapped in Home Assistant, delivering `power_kw` now and 3.1 kW all along."""
+    """A wallbox mapped in Home Assistant, delivering `power_kw` now, and 3.1 kW at every reading Mate kept."""
     import ha_client
     car.db.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('wallbox_enabled', '1')")
+    car.db.execute("INSERT INTO ha_samples (vehicle_id, recorded_at, kind, value) "
+                   "SELECT vehicle_id, recorded_at, 'wallbox_power_kw', 3.1 FROM positions")
     car.db.commit()
     monkeypatch.setattr(ha_client, "is_configured", lambda: True)
     monkeypatch.setattr(ha_client, "get_mapping", lambda: {"power": "sensor.wallbox_power"})
     monkeypatch.setattr(ha_client, "get_live", lambda: {"configured": True, "power_kw": power_kw})
-    monkeypatch.setattr(ha_client, "get_history",
-                        lambda entity, start, end: [(ha_client.epoch(start) - 1, 3.1)])
-    # Restored after the test, so the next one starts with Home Assistant answering.
-    monkeypatch.setattr(ha_client, "_unreachable_at", None)
 
 
 def _wallbox_line(polled):
@@ -168,108 +162,37 @@ def test_a_wallbox_delivering_power_to_the_plugged_in_car_is_home(car, monkeypat
 def test_a_place_recognised_as_public_outranks_the_wallbox(car, monkeypatch):
     """A charge the GPS placed at a public charger gets no wallbox line even while the home wallbox
     delivers power: that power is another car's."""
-    import ha_client
     car.db.execute("UPDATE charges SET location_type = 'HPC', charging_place_source = 'gps' WHERE id = 9")
     car.db.commit()
     car.polls(4)
     car.frame(charging=1, plug_connected=1, charge_voltage_v=430, charge_current_a=-7)
     _wallbox(monkeypatch, car, power_kw=3.1)
-    monkeypatch.setattr(ha_client, "get_history",
-                        lambda *a: pytest.fail("the home wallbox's history was read for a charge at a public charger"))
     polled = TestClient(main.app).get("/api/charging-chart").text
     assert 'id="pc-9"' in polled and "data: col([])" in _wallbox_line(polled)
 
 
 def test_an_idle_wallbox_says_the_charge_is_elsewhere(car, monkeypatch):
-    """Plugged in somewhere else: the home wallbox delivers nothing, so its history is not even read."""
-    import ha_client
+    """Plugged in somewhere else: the home wallbox delivers nothing, so its readings are not the car's."""
     car.polls(4)
     car.frame(charging=1, plug_connected=1, charge_voltage_v=430, charge_current_a=-7)
     _wallbox(monkeypatch, car, power_kw=0)
-    monkeypatch.setattr(ha_client, "get_history",
-                        lambda *a: pytest.fail("the home wallbox's history was read for a charge elsewhere"))
     polled = TestClient(main.app).get("/api/charging-chart").text
     assert 'id="pc-9"' in polled and "data: col([])" in _wallbox_line(polled)
 
 
-@pytest.mark.parametrize("route", ["/api/charging-chart", "/api/charge/9/power-chart",
-                                   "/api/wallbox/compare-chart?charge_id=9"])
-def test_the_wallbox_history_is_read_off_the_event_loop(car, monkeypatch, route):
+def test_the_panel_reads_the_wallbox_off_the_event_loop(car, monkeypatch):
     import ha_client
-    car.db.execute("UPDATE charges SET location_type = 'HOME' WHERE id = 9")
-    car.db.commit()
-    car.polls(5)
-    _wallbox(monkeypatch, car, power_kw=0)
+    car.polls(4)
+    car.frame(charging=1, plug_connected=1, charge_voltage_v=430, charge_current_a=-7)
+    _wallbox(monkeypatch, car, power_kw=3.1)
     on_the_loop = []
 
-    def history(entity, start, end):
+    def live():
         try:
             on_the_loop.append(asyncio.get_running_loop())
         except RuntimeError:
             pass
-        return [(ha_client.epoch(start) - 1, 3.1)]
+        return {"configured": True, "power_kw": 3.1}
 
-    monkeypatch.setattr(ha_client, "get_history", history)
-    assert "3.1" in _wallbox_line(TestClient(main.app).get(route).text) and not on_the_loop
-
-
-def test_a_home_assistant_that_did_not_answer_is_not_asked_by_the_next_chart(car, monkeypatch):
-    import ha_client
-    car.db.execute("UPDATE charges SET location_type = 'HOME' WHERE id = 9")
-    car.db.commit()
-    car.polls(5)
-    history = ha_client.get_history
-    _wallbox(monkeypatch, car, power_kw=0)
-    monkeypatch.setattr(ha_client, "get_history", history)
-    monkeypatch.setattr(ha_client, "_creds", lambda: ("http://ha.invalid:8123", "token"))
-    asked = []
-
-    def no_answer(req, *a, **k):
-        if req.full_url.startswith("http://ha.invalid:8123/"):
-            asked.append(req.full_url)
-        raise urllib.error.URLError(TimeoutError("timed out"))
-
-    monkeypatch.setattr(ha_client.urllib.request, "urlopen", no_answer)
-    client = TestClient(main.app)
-    for _ in range(3):
-        assert 'id="pc-9"' in client.get("/api/charge/9/power-chart").text
-    assert len(asked) == 1, "each chart waited for Home Assistant's timeout again"
-
-
-@pytest.mark.parametrize("meanwhile", ["an HTTP error", "an answer", "a minute"])
-def test_a_home_assistant_is_asked_again_after_an_answer_or_a_minute(car, monkeypatch, meanwhile):
-    """After an answer, an HTTP error counting as one, or a minute, the next chart asks Home Assistant again."""
-    import ha_client
-    car.db.execute("UPDATE charges SET location_type = 'HOME' WHERE id = 9")
-    car.db.commit()
-    car.polls(5)
-    history = ha_client.get_history
-    _wallbox(monkeypatch, car, power_kw=0)
-    monkeypatch.setattr(ha_client, "get_history", history)
-    monkeypatch.setattr(ha_client, "_creds", lambda: ("http://ha.invalid:8123", "token"))
-    asked, replies = [], []
-
-    def reply(req, *a, **k):
-        if not req.full_url.startswith("http://ha.invalid:8123/"):
-            raise urllib.error.URLError(TimeoutError("timed out"))
-        asked.append(req.full_url)
-        if not replies:
-            raise urllib.error.URLError(TimeoutError("timed out"))
-        if isinstance(replies[0], Exception):
-            raise replies.pop(0)
-        return replies.pop(0)
-
-    monkeypatch.setattr(ha_client.urllib.request, "urlopen", reply)
-    client = TestClient(main.app)
-    client.get("/api/charge/9/power-chart")
-    if meanwhile == "an HTTP error":
-        replies.append(urllib.error.HTTPError("http://ha.invalid:8123/api/", 503, "Unavailable", {}, io.BytesIO()))
-        ha_client.test_connection()
-    elif meanwhile == "an answer":
-        replies.append(urllib.response.addinfourl(io.BytesIO(b'{"message": "API running"}'), {}, "", code=200))
-        ha_client.test_connection()
-    else:
-        monkeypatch.setattr(ha_client, "_unreachable_at", ha_client._unreachable_at - 61)
-    before = len(asked)
-    client.get("/api/charge/9/power-chart")
-    assert len(asked) > before, f"after {meanwhile} the chart still did not ask Home Assistant"
+    monkeypatch.setattr(ha_client, "get_live", live)
+    assert "3.1" in _wallbox_line(TestClient(main.app).get("/api/charging-chart").text) and not on_the_loop

@@ -171,12 +171,14 @@ def test_recorder_does_not_duplicate_charge_on_resume():
             return True
         def finalize_charge(self, *a, **k):
             pass
+        def save_ha_samples_at_position(self, *a, **k):
+            pass
 
     db = _FakeDB()
     rec = R.Recorder(db, vehicle_id=1)
-    # Hermetic: on a host with a live HA wallbox, _read_wallbox_energy() would return a real
+    # Hermetic: on a host with a live HA wallbox, _read_wallbox() would return a real
     # reading and the recorder would call wallbox methods the fake doesn't have.
-    rec._read_wallbox_energy = lambda: None
+    rec._read_wallbox = lambda: {}
     data = types.SimpleNamespace(soc=50, latitude=1.0, longitude=2.0)
     rec._handle_event(StateEvent(State.PARKED_ACTIVE, State.CHARGING, data), data)
     assert db.creates == 1 and rec._active_charge_id == 99

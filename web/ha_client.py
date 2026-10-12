@@ -14,7 +14,6 @@ from __future__ import annotations
 import json
 import os
 import ssl
-import time
 import urllib.error
 import urllib.request
 from datetime import datetime
@@ -23,8 +22,6 @@ from urllib.parse import quote
 import db_reader
 
 _TIMEOUT = 8  # seconds — local network, keep snappy
-_UNREACHABLE_FOR = 60  # seconds a request with no answer keeps the charts from asking again
-_unreachable_at: float | None = None
 
 # Entities likely to belong to a wallbox / EV charger, by name or device_class.
 _WB_KEYWORDS = (
@@ -88,28 +85,12 @@ def _request(path: str, method: str = "GET", payload: object | None = None) -> t
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
-    global _unreachable_at
-    try:
-        with urllib.request.urlopen(req, timeout=_TIMEOUT, context=ctx) as resp:
-            raw = resp.read().decode("utf-8", "replace")
-    except urllib.error.HTTPError:
-        _unreachable_at = None
-        raise
-    except OSError:
-        _unreachable_at = time.monotonic()
-        raise
-    _unreachable_at = None
-    try:
-        return resp.status, json.loads(raw)
-    except json.JSONDecodeError:
-        return resp.status, raw
-
-
-def recently_unreachable() -> bool:
-    """True within a minute of a request Home Assistant did not answer at all (refused, timed out), until one
-    is answered: a page of charts then asks once instead of each one waiting the whole timeout."""
-    at = _unreachable_at   # read once: another thread may clear it in between
-    return at is not None and time.monotonic() - at < _UNREACHABLE_FOR
+    with urllib.request.urlopen(req, timeout=_TIMEOUT, context=ctx) as resp:
+        raw = resp.read().decode("utf-8", "replace")
+        try:
+            return resp.status, json.loads(raw)
+        except json.JSONDecodeError:
+            return resp.status, raw
 
 
 def test_connection() -> dict:
@@ -411,7 +392,7 @@ def get_live() -> dict:
            "max_current_a": None, "charging": False, "speed": None, "speed_unit": "",
            "max_power": None, "max_power_unit": ""}
     # The switch in Settings, honoured HERE because this is the only door wallbox data comes
-    # through — the web tile calls it, and so does the poller (recorder._read_wallbox_energy).
+    # through — the web tile calls it, and so does the poller (recorder._read_wallbox).
     # It used to gate the wallbox PAGE, the session-energy line and the chart overlay, and nothing
     # else: with the feature off and a mapping still saved, every poll kept reading the meter into
     # `ac_energy_kwh`, and `poller/db.py` bills a home charge on that column whenever it is set. The
@@ -504,6 +485,22 @@ def set_max_current(value: float) -> bool:
     return call_service("number", "set_value", {"entity_id": eid, "value": value})
 
 
+def step_hold(times: list[str], hist: list[tuple[float, float]]) -> list[float | None]:
+    """A history as sorted (epoch, value) read at each of `times` (ISO): the last value known at or before
+    each instant, None before the first; the shape a chart draws beside the car's own readings."""
+    out, j, last = [], 0, None
+    for t in times:
+        e = epoch(t)
+        if e is None:
+            out.append(None)
+            continue
+        while j < len(hist) and hist[j][0] <= e:
+            last = hist[j][1]
+            j += 1
+        out.append(round(last, 3) if last is not None else None)
+    return out
+
+
 def epoch(iso: str) -> float | None:
     """ISO-8601 (with offset) → epoch seconds, or None."""
     try:
@@ -513,12 +510,19 @@ def epoch(iso: str) -> float | None:
 
 
 def get_history(entity_id: str, start_iso: str, end_iso: str) -> list[tuple[float, float]]:
-    """Numeric history of one entity over [start, end] as sorted (epoch, value).
+    """Numeric history of one entity over [start, end] as sorted (epoch, value); [] whether Home Assistant
+    had none or did not answer. See read_history for a caller that must tell the two apart."""
+    return read_history(entity_id, start_iso, end_iso) or []
 
-    Uses HA's /api/history/period — no need to store wallbox samples ourselves;
-    HA's recorder already has them (default retention ~10 days)."""
+
+def read_history(entity_id: str, start_iso: str, end_iso: str) -> list[tuple[float, float]] | None:
+    """Numeric history of one entity over [start, end] as sorted (epoch, value): [] when Home Assistant has
+    none (purged, or nothing recorded), None when it did not answer, or answered other than 200, or is not
+    configured: not a reading, so a caller that records what it read does not record that.
+
+    Uses HA's /api/history/period."""
     if not entity_id or not is_configured():
-        return []
+        return None
     path = (f"/api/history/period/{quote(start_iso, safe='')}"
             f"?filter_entity_id={quote(entity_id, safe='')}"
             f"&end_time={quote(end_iso, safe='')}"
@@ -526,15 +530,17 @@ def get_history(entity_id: str, start_iso: str, end_iso: str) -> list[tuple[floa
     try:
         status, body = _request(path)
     except Exception:  # noqa: BLE001
+        return None
+    if status != 200 or not isinstance(body, list):
+        return None
+    if not body or not isinstance(body[0], list):
         return []
-    if status != 200 or not isinstance(body, list) or not body or not isinstance(body[0], list):
-        return []
-    # With minimal_response HA sends full attributes only on the FIRST sample, so
-    # read the unit there to normalise W→kW (some wallboxes report power in watts).
+    # With minimal_response HA sends full attributes only on the FIRST sample, so read the unit there
+    # to normalise W→kW and Wh→kWh, as get_live reads the same sensors (some wallboxes report in watts).
     unit = ""
     if isinstance(body[0][0], dict):
         unit = (body[0][0].get("attributes", {}) or {}).get("unit_of_measurement", "")
-    scale = 0.001 if unit.lower() == "w" else 1.0
+    scale = 0.001 if unit.lower() in ("w", "wh") else 1.0
     out: list[tuple[float, float]] = []
     for s in body[0]:
         ts = s.get("last_changed") or s.get("last_updated")

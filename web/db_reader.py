@@ -13,6 +13,7 @@ from itertools import groupby, pairwise
 from pathlib import Path
 from typing import Optional
 import os
+import sys
 import contextlib
 import threading
 
@@ -734,6 +735,18 @@ def _get():
 
 ACTIVE_VEHICLE_SETTING = "active_vehicle_vin"
 _read_vehicle_scope = threading.local()
+
+
+@contextlib.contextmanager
+def vehicle_scope(vehicle_id: int):
+    """Every scoped read inside is this car's, whichever the sidebar picked: for work that goes car by car
+    (a sweep). Synchronous work only, as held_vehicle_scope says."""
+    previous = getattr(_read_vehicle_scope, "vehicle_id", None)
+    _read_vehicle_scope.vehicle_id = (vehicle_id,)
+    try:
+        yield
+    finally:
+        _read_vehicle_scope.vehicle_id = previous
 
 
 @contextlib.contextmanager
@@ -8685,6 +8698,68 @@ def get_charge_power_curve(charge_id: int) -> dict:
             "battery_temp": [r["battery_min_temp"] for r in rows],
             "outside_temp": [r["outside_temp"] for r in rows],
             "remaining_min": [r["remaining_charge_min"] for r in rows]}
+
+
+def _wallbox_sample_kinds() -> dict[str, str]:
+    """The roles of the wallbox mapping and the kinds `ha_samples` keeps their readings under. The names live
+    with the table, in the poller's dependency-free module; on the path for the length of one import, since
+    the two directories share module names."""
+    poller = str(Path(__file__).resolve().parent.parent / "poller")
+    sys.path.insert(0, poller)
+    try:
+        from schema import WALLBOX_ENERGY_KWH, WALLBOX_POWER_KW
+    finally:
+        sys.path.remove(poller)
+    return {"power": WALLBOX_POWER_KW, "energy": WALLBOX_ENERGY_KWH}
+
+
+# At import, not per read: the two directories share module names, and a path changed while another thread imports
+# would hand it the poller's module.
+WALLBOX_SAMPLE_KINDS = _wallbox_sample_kinds()
+
+
+def wallbox_power_samples(lo: str, hi: str) -> list[tuple[float, float]]:
+    """The wallbox's power as the poller read it from `lo` to `hi` (raw UTC ISO, as positions are stamped), as
+    sorted (epoch, value): the shape ha_client.get_history gives, so a line drawn from Home Assistant's history
+    draws from here unchanged. Empty for a charge none were kept for."""
+    import ha_client
+    kind = WALLBOX_SAMPLE_KINDS["power"]
+    rows = _get().execute(
+        "SELECT recorded_at, value FROM ha_samples WHERE vehicle_id = COALESCE(?, vehicle_id) AND kind = ? "
+        "AND recorded_at >= ? AND recorded_at <= ? ORDER BY recorded_at",
+        (_current_vehicle_id(), kind, lo, hi)).fetchall()
+    return [(ha_client.epoch(r["recorded_at"]), r["value"]) for r in rows]
+
+
+def home_or_unconfirmed_charges_without_wallbox_samples() -> list[sqlite3.Row]:
+    """Finished charges at home, or not typed yet (no type, or the old "MANUAL") and so maybe at home, a merged
+    group's parent and not its pieces, with no wallbox reading kept over their span: the ones from before Mate
+    kept them, newest first, which is where Home Assistant's history still reaches."""
+    return _get().execute(
+        "SELECT c.id, c.vehicle_id FROM charges c WHERE c.ended_at IS NOT NULL "
+        "AND (c.location_type IS NULL OR c.location_type IN ('HOME', 'MANUAL')) "
+        "AND c.merged_into_id IS NULL AND c.vehicle_id = COALESCE(?, c.vehicle_id) AND NOT EXISTS ("
+        "SELECT 1 FROM ha_samples s WHERE s.vehicle_id = c.vehicle_id AND s.kind = ? "
+        "AND s.recorded_at BETWEEN c.started_at AND c.ended_at) ORDER BY c.started_at DESC",
+        (_current_vehicle_id(), WALLBOX_SAMPLE_KINDS["power"])).fetchall()
+
+
+def save_wallbox_samples(vehicle_id: int, times: list[str], kept: dict[str, list]) -> int:
+    """Keep readings of the wallbox at the car's instants, {kind: values aligned to `times`}; a None is no
+    reading and leaves no row, nor does a reading already kept at that instant, so a charge read again is
+    kept once. Returns the rows written."""
+    rows = [(vehicle_id, t, kind, float(v), vehicle_id, kind, t) for kind, values in kept.items()
+            for t, v in zip(times, values) if v is not None]
+    if not rows:
+        return 0
+    db = _conn_rw()
+    before = db.total_changes
+    db.executemany("INSERT INTO ha_samples (vehicle_id, recorded_at, kind, value) SELECT ?, ?, ?, ? WHERE NOT EXISTS ("
+                   "SELECT 1 FROM ha_samples WHERE vehicle_id = ? AND kind = ? AND recorded_at = ?)", rows)
+    written = db.total_changes - before
+    db.commit()
+    db.close()
+    return written
 
 
 def latest_charge_id_with_power() -> int | None:

@@ -178,6 +178,57 @@ _pin_auto_timezone()
 _repair_manual_charge_timezones()
 _repair_merged_charge_pieces()
 
+
+def _keep_earlier_wallbox_lines() -> None:
+    """Once, after the wallbox's readings began to be kept: the lines of the home charges from before, and of the
+    ones not confirmed yet, which may be home's, of every car, read from Home Assistant's history while its
+    recorder still has them, are kept like the readings since; a charge the history no longer reaches keeps
+    nothing. The first charge Home Assistant does not answer for, on any of its readings, ends the sweep
+    undone: it and the rest are read on a later start."""
+    mapping = ha_client.get_mapping()
+    if not (db_reader.get_setting("wallbox_enabled", "0") == "1" and ha_client.is_configured() and mapping.get("power")):
+        return                                              # not done: a wallbox mapped later is swept on a later start
+    complete = True
+    roles = {role: kind for role, kind in db_reader.WALLBOX_SAMPLE_KINDS.items() if mapping.get(role)}
+    kept, charges = 0, 0
+    for vehicle in db_reader.get_vehicles():
+        if not complete:
+            break
+        with db_reader.vehicle_scope(vehicle["id"]):
+            for charge in db_reader.home_or_unconfirmed_charges_without_wallbox_samples():
+                times = db_reader.get_charge_power_curve(charge["id"])["times"]
+                if not times:
+                    continue
+                hists = {kind: ha_client.read_history(mapping[role], times[0], times[-1]) for role, kind in roles.items()}
+                if any(h is None for h in hists.values()):
+                    complete = False
+                    break
+                n = db_reader.save_wallbox_samples(vehicle["id"], times,
+                                                   {kind: ha_client.step_hold(times, h) for kind, h in hists.items() if h})
+                kept, charges = kept + n, charges + bool(n)
+    if charges:
+        log.info("Wallbox lines kept: %d earlier charge(s), %d reading(s) from Home Assistant's history", charges, kept)
+    if complete:
+        db_reader.set_setting("wallbox_lines_kept", "1")
+
+
+def _maybe_keep_earlier_wallbox_lines() -> None:
+    """Not on the start itself (it reads Home Assistant), and at most once an hour through a stamp in the database,
+    so the second import of this module on the same start does not set it off again."""
+    try:
+        if db_reader.get_setting("wallbox_lines_kept", "0") == "1":
+            return
+        now = time.time()
+        if now - float(db_reader.get_setting("wallbox_lines_keep_at", "0") or 0) < 3600:
+            return
+        db_reader.set_setting("wallbox_lines_keep_at", str(now))
+        threading.Thread(target=_keep_earlier_wallbox_lines, daemon=True).start()
+    except Exception as exc:  # noqa: BLE001 — never block startup over a repair; a later start sets it off again
+        log.warning("Wallbox lines of earlier charges not kept yet: %s", exc)
+
+
+_maybe_keep_earlier_wallbox_lines()
+
 app = FastAPI(title="LeapMotor Mate")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
@@ -3518,7 +3569,7 @@ async def wallbox_compare_chart(request: Request):
         return HTMLResponse('<div class="text-sm text-slate-500 py-2">—</div>')
     curve = db_reader.get_charge_power_curve(cid)
     home = db_reader.is_home_charge(cid)
-    wb_power = await run_in_threadpool(_wallbox_overlay, curve, home)   # it may read Home Assistant
+    wb_power = _wallbox_overlay(curve, home)
     return templates.TemplateResponse(request, "partials/charge_power_chart.html", _ctx(
         cid=cid, wb_power=wb_power, **curve))
 
@@ -3827,29 +3878,18 @@ async def set_manual_charge_location(request: Request, charge_id: int):
 
 
 def _wallbox_overlay(curve: dict, home: bool) -> list | None:
-    """Wallbox power (from HA history) resampled onto the car curve's timestamps,
-    so it overlays the car's DC power on the same axis. None when unavailable.
+    """Wallbox power as Mate kept it, held onto the car curve's timestamps,
+    so it overlays the car's DC power on the same axis. None when none was kept.
     Only a charge at home gets the overlay — on a public/away charge the home wallbox
     is irrelevant (and could even be charging another car); the caller says which it is."""
     times = curve.get("times") or []
-    mapping = ha_client.get_mapping()
     wallbox_on = db_reader.get_setting("wallbox_enabled", "0") == "1"
-    if (not wallbox_on or not times or not ha_client.is_configured()
-            or not mapping.get("power") or not home or ha_client.recently_unreachable()):
+    if not wallbox_on or not times or not home:
         return None
-    hist = ha_client.get_history(mapping["power"], times[0], times[-1])
+    hist = db_reader.wallbox_power_samples(times[0], times[-1])
     if not hist:
         return None
-    out, j, last = [], 0, None
-    for t in times:
-        e = ha_client.epoch(t)
-        if e is None:
-            out.append(None)
-            continue
-        while j < len(hist) and hist[j][0] <= e:   # step-hold: last known wallbox value ≤ sample time
-            last = hist[j][1]
-            j += 1
-        out.append(round(last, 3) if last is not None else None)
+    out = ha_client.step_hold(times, hist)
     return out if any(v is not None for v in out) else None
 
 
@@ -4004,7 +4044,7 @@ async def charge_power_chart(request: Request, charge_id: int):
     its delivered AC power is drawn beside the car's DC power."""
     curve = db_reader.get_charge_power_curve(charge_id)
     home = db_reader.is_home_charge(charge_id)
-    wb_power = await run_in_threadpool(_wallbox_overlay, curve, home)   # it may read Home Assistant
+    wb_power = _wallbox_overlay(curve, home)
     return templates.TemplateResponse(request, "partials/charge_power_chart.html", _ctx(
         cid=charge_id, wb_power=wb_power, facts=_charge_facts(curve), **curve))
 
