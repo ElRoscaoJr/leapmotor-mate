@@ -182,3 +182,28 @@ def test_a_charge_closed_after_an_outage_is_read_up_to_its_last_reading(car, mon
     monkeypatch.setattr(ha_client, "get_history", helper)
     charge = {**db._conn.execute("SELECT * FROM charges").fetchone(), "location_type": "HOME"}
     assert db_reader.compute_cost(charge) == 1.68
+
+
+# ── the unit the helper reports in ──────────────────────────────────────────────────────────────
+def _helper_answers(monkeypatch, state, unit):
+    """Home Assistant's own answer for the helper, read by the real history reader: the unit comes
+    on the first sample, as with minimal_response."""
+    monkeypatch.setattr(ha_client, "is_configured", lambda: True)
+    body = [[{"last_changed": (T0 + timedelta(minutes=120)).isoformat(), "state": state,
+              "attributes": {"unit_of_measurement": unit}}]]
+    monkeypatch.setattr(ha_client, "_request", lambda path, *a, **k: (200, body))
+
+
+def test_a_helper_in_wh_is_priced_in_kwh(monkeypatch):
+    # 7,000 Wh bought are 7 kWh: read as kWh they billed 1,680 € instead of 1.68 €.
+    con = _db()
+    _setup(monkeypatch, con)
+    _helper_answers(monkeypatch, "7000", "Wh")
+    assert db_reader.compute_cost(_charge()) == 1.68
+
+
+def test_a_helper_in_kwh_is_priced_as_it_reads(monkeypatch):
+    con = _db()
+    _setup(monkeypatch, con)
+    _helper_answers(monkeypatch, "7.0", "kWh")
+    assert db_reader.compute_cost(_charge()) == 1.68
