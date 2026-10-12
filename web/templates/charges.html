@@ -632,6 +632,29 @@ document.body.addEventListener('chargeOpen', function (e) {
   }, true);
 })();
 
+// A row opened by a click or a key scrolls as little as shows it whole, or to its top where it is taller than the
+// screen, once a chart still on its way is drawn. Rows opened by Expand all or a link stay where they are.
+document.addEventListener('click', function (e) {
+  var card = e.target.closest && e.target.closest('summary.charge-row') && e.target.closest('details.charge-card');
+  if (!card || card.open) return;
+  setTimeout(function () {                              // after the click has opened the row, if it did
+    if (!card.open) return;
+    var chart = card.querySelector('[data-chart-pending]'), opening = card._opening = {};
+    function show() {                                   // its top kept below the bars stuck to the page's top
+      if (card._opening !== opening || !card.isConnected) return;   // closed, or drawn over, while its chart was on its way
+      var main = card.closest('main'), r = card.getBoundingClientRect(), top = main.getBoundingClientRect().top;
+      [].forEach.call(main.children, function (b) { if (getComputedStyle(b).position === 'sticky') top = Math.max(top, b.getBoundingClientRect().bottom); });
+      var by = Math.min(Math.max(r.bottom - main.getBoundingClientRect().bottom, 0), r.top - top);
+      if (by) main.scrollBy({ top: by, behavior: 'smooth' });
+    }
+    if (!chart) return show();
+    chart.parentElement.addEventListener('htmx:afterSettle', function () { requestAnimationFrame(show); }, { once: true });
+  });
+});
+document.addEventListener('toggle', function (e) {     // a closing, by any hand, ends the opening's wait
+  if (!e.target.open && e.target.matches && e.target.matches('details.charge-card')) e.target._opening = null;
+}, true);
+
 // Auto-refresh the history when the car ends its charge session. The live panel (#charging-live-panel)
 // polls every 30s and carries the open session; once it is gone the charge is in the history, so reload
 // once to surface the new completed-charge card + updated totals. Not the charging flag: that goes off
