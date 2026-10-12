@@ -515,8 +515,7 @@ def epoch(iso: str) -> float | None:
 def get_history(entity_id: str, start_iso: str, end_iso: str) -> list[tuple[float, float]]:
     """Numeric history of one entity over [start, end] as sorted (epoch, value).
 
-    Uses HA's /api/history/period — no need to store wallbox samples ourselves;
-    HA's recorder already has them (default retention ~10 days)."""
+    Uses HA's /api/history/period."""
     if not entity_id or not is_configured():
         return []
     path = (f"/api/history/period/{quote(start_iso, safe='')}"
