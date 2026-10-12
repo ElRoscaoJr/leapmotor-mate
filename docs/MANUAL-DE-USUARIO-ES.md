@@ -1,8 +1,19 @@
 # LeapMotor Mate — Manual de usuario
 
-> **Versión de Mate:** v4.15.1 · **Idioma:** Español
+> **Versión de Mate:** v4.15.2 · **Idioma:** Español
 
-## Novedades de la versión 4.15.1
+## Novedades de la versión 4.15.2
+
+**El gráfico de una carga llega al abrir su fila.** En el calendario de Cargas, el gráfico de una carga
+se pide en cuanto abres su fila, también en el móvil, donde queda debajo del borde de la pantalla, y
+dibuja como mucho una lectura por cada píxel de ancho, así que una carga nocturna aparece varias veces más
+rápido. Lo que dibuja son lecturas reales, y una pausa sigue cortando la línea (#417, @arekm).
+
+**Una fila abierta se pone a la vista.** Una fila de carga que abres en la parte baja de la pantalla
+ahora se desplaza, una vez dibujado su gráfico, lo justo para verse entera, o hasta su inicio si es más
+alta que la pantalla. Las filas abiertas con *Desplegar todo* se quedan donde están (#418, @arekm).
+
+### Novedades de la versión 4.15.1
 
 **Una carga termina cuando deja de entrar energía.** Después de una carga, con el cable enchufado, el
 coche mantiene abierta su sesión de carga un rato más. Mate termina ahora la carga cuando deja de entrar

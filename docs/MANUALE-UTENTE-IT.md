@@ -1,8 +1,20 @@
 # LeapMotor Mate — Manuale utente
 
-> **Versione di Mate:** v4.15.1 · **Lingua:** Italiano
+> **Versione di Mate:** v4.15.2 · **Lingua:** Italiano
 
-## Novità della 4.15.1
+## Novità della 4.15.2
+
+**Il grafico di una ricarica arriva quando apri la riga.** Nel calendario delle Ricariche, il grafico di
+una ricarica viene chiesto appena apri la sua riga, anche sul telefono dove sta sotto il bordo dello
+schermo, e disegna al massimo una lettura per ogni pixel di larghezza, così una ricarica notturna compare
+molto più in fretta. Quello che disegna sono letture vere, e una pausa interrompe ancora la linea
+(#417, @arekm).
+
+**Una riga aperta si mette in vista.** Una riga di ricarica che apri in fondo allo schermo ora scorre in
+su, quando il suo grafico è disegnato, quanto basta a mostrarla intera, o fino al suo inizio se è più alta
+dello schermo. Le righe aperte con *Espandi tutto* restano dove sono (#418, @arekm).
+
+### Novità della 4.15.1
 
 **Una ricarica finisce quando smette di entrare energia.** Dopo una ricarica, con il cavo inserito,
 l'auto tiene aperta la sessione di carica ancora per un po'. Ora Mate chiude la ricarica quando l'energia

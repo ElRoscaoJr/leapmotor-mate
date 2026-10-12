@@ -1,8 +1,21 @@
 # LeapMotor Mate — Manuel utilisateur
 
-> **Version de Mate :** v4.15.1 · **Langue :** Français
+> **Version de Mate :** v4.15.2 · **Langue :** Français
 
-## Nouveautés de la version 4.15.1
+## Nouveautés de la version 4.15.2
+
+**Le graphique d'une recharge arrive à l'ouverture de sa ligne.** Dans le calendrier des Recharges, le
+graphique d'une recharge est demandé dès que vous ouvrez sa ligne, même sur un téléphone où il se trouve
+sous le bord de l'écran, et il dessine au plus une mesure par pixel de sa largeur : une recharge de nuit
+s'affiche plusieurs fois plus vite. Ce qu'il dessine, ce sont de vraies mesures, et une pause coupe
+toujours la ligne (#417, @arekm).
+
+**Une ligne ouverte vient à l'écran.** Une ligne de recharge que vous ouvrez en bas de l'écran défile
+maintenant, une fois son graphique dessiné, juste assez pour s'afficher en entier, ou jusqu'à son début
+si elle est plus haute que l'écran. Les lignes ouvertes avec *Tout déplier* restent où elles sont
+(#418, @arekm).
+
+### Nouveautés de la version 4.15.1
 
 **Une recharge se termine quand l'énergie cesse d'entrer.** Après une recharge, câble branché, la
 voiture garde sa session de charge ouverte encore un moment. Mate termine maintenant la recharge quand

@@ -1,8 +1,21 @@
 # LeapMotor Mate — Benutzerhandbuch
 
-> **Mate-Version:** v4.15.1 · **Sprache:** Deutsch
+> **Mate-Version:** v4.15.2 · **Sprache:** Deutsch
 
-## Neu in Version 4.15.1
+## Neu in Version 4.15.2
+
+**Das Diagramm eines Ladevorgangs kommt mit dem Öffnen der Zeile.** Im Kalender Ladevorgänge wird das
+Diagramm eines Ladevorgangs angefordert, sobald Sie seine Zeile öffnen, auch auf dem Handy, wo es unter
+dem Bildschirmrand liegt, und es zeichnet höchstens einen Messwert pro Pixel seiner Breite, sodass ein
+nächtlicher Ladevorgang um ein Mehrfaches schneller erscheint. Gezeichnet werden echte Messwerte, und
+eine Pause unterbricht die Linie weiterhin (#417, @arekm).
+
+**Eine geöffnete Zeile kommt in Sicht.** Eine Ladezeile, die Sie am unteren Bildschirmrand öffnen,
+scrollt jetzt, sobald ihr Diagramm gezeichnet ist, gerade so weit nach oben, dass sie ganz zu sehen ist,
+oder bis zu ihrem Anfang, wenn sie höher als der Bildschirm ist. Mit *Alle aufklappen* geöffnete Zeilen
+bleiben, wo sie sind (#418, @arekm).
+
+### Neu in Version 4.15.1
 
 **Ein Ladevorgang endet, wenn keine Energie mehr fließt.** Nach dem Laden hält das Auto bei
 eingestecktem Kabel seine Ladesitzung noch eine Weile offen. Mate beendet den Ladevorgang jetzt, wenn

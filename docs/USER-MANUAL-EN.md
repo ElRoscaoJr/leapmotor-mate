@@ -1,8 +1,19 @@
 # LeapMotor Mate — User Manual
 
-> **Mate version:** v4.15.1 · **Language:** English
+> **Mate version:** v4.15.2 · **Language:** English
 
-## New in 4.15.1
+## New in 4.15.2
+
+**A charge's chart comes as its row opens.** In the Charges calendar, the chart of a charge is asked
+for as soon as you open its row, also on a phone where it lies below the screen's edge, and it draws at
+most one reading per pixel of its width, so a night's charge appears several times faster. What it
+draws are real readings, and a pause still breaks the line (#417, @arekm).
+
+**An opened row comes into view.** A charge row you open near the bottom of the screen now scrolls up,
+once its chart is drawn, just enough to show it whole, or to its top if it is taller than the screen.
+Rows opened with *Expand all* stay where they are (#418, @arekm).
+
+### New in 4.15.1
 
 **A charge ends when the energy stops.** After a charge, with the cable in, a car keeps its charge
 session open for a while. Mate now ends the charge when the energy stops, so its end time and duration
