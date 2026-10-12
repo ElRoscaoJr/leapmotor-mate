@@ -385,22 +385,45 @@ def _vampire_section() -> str:
     return "\n".join(out)
 
 
+# A reading farther than this from the day's median odometer is not the car's own: no car drives
+# that far in a day. Before 4.14.1 a reading of the other car on an account could be filed under
+# this one (#338).
+_ODO_DAY_SPREAD_KM = 1500
+
+
 def _soc_daily_section() -> str:
     """Per-day SoC hi→lo + km driven for the last 14 days — reveals the parked-drain pattern and
-    any data gaps behind a 'my history vanished' report (#63)."""
+    any data gaps behind a 'my history vanished' report (#63).
+
+    The km are the spread of the day's readings that carry an odometer (one without is stored as
+    0). A reading farther than _ODO_DAY_SPREAD_KM from the day's median odometer is left out of the
+    day's km and SoC and counted apart, so it still shows: a T03's day read "drove 9228 km", and
+    another "8573 km" with its A10's 96.8 %, on days it drove a dozen (#338)."""
     try:
         cutoff = (datetime.now(timezone.utc) - timedelta(days=14)).isoformat()
         rows = db_reader._get().execute(
-            "SELECT substr(recorded_at,1,10) d, COUNT(*) n, MIN(soc) lo, MAX(soc) hi, "
-            "MIN(odometer_km) o0, MAX(odometer_km) o1 FROM positions "
+            "SELECT substr(recorded_at,1,10) d, soc, odometer_km FROM positions "
             "WHERE vehicle_id = COALESCE(?, vehicle_id) AND soc IS NOT NULL AND recorded_at >= ? "
-            "GROUP BY d ORDER BY d", (db_reader._current_vehicle_id(), cutoff)).fetchall()
+            "ORDER BY recorded_at", (db_reader._current_vehicle_id(), cutoff)).fetchall()
     except Exception as e:  # noqa: BLE001
         return f"(soc-daily failed: {e})"
-    out = []
+    days: dict = {}
     for r in rows:
-        drove = (r["o1"] or 0) - (r["o0"] or 0)
-        out.append(f"  {r['d']}  n={str(r['n']):<5} soc {r['hi']:.1f}→{r['lo']:.1f}  drove {drove:.0f} km")
+        days.setdefault(r["d"], []).append((r["soc"], r["odometer_km"] or 0))
+    out = []
+    for d, readings in days.items():
+        odos = sorted(o for _, o in readings if o > 0)
+        mid = odos[len(odos) // 2] if odos else 0
+        own = [(s, o) for s, o in readings if o <= 0 or abs(o - mid) <= _ODO_DAY_SPREAD_KM]
+        kept = [o for _, o in own if o > 0]
+        drove = max(kept) - min(kept) if kept else 0
+        socs = [s for s, _ in own]
+        line = (f"  {d}  n={str(len(readings)):<5} soc {max(socs):.1f}→{min(socs):.1f}"
+                f"  drove {drove:.0f} km")
+        if len(own) < len(readings):
+            line += (f"  ⚠ {len(readings) - len(own)} reading(s) over {_ODO_DAY_SPREAD_KM} km off the"
+                     " day's odometer, left out (another car's?)")
+        out.append(line)
     return "\n".join(out) or "(no SoC samples in the last 14 days)"
 
 
