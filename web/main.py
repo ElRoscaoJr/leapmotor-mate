@@ -5903,6 +5903,20 @@ _CAR_PIC_RETRY_S = 600.0
 _car_pic_retry_after = 0.0
 
 
+def _download_car_picture_package(pkg_path: str) -> bytes | None:
+    """The package fresh from the cloud, written over the copy on disk; None when the cloud gave none."""
+    pkg = command_client.get_car_picture_package()
+    if pkg:
+        try:
+            with open(pkg_path, "wb") as f:
+                f.write(pkg)
+        except OSError:
+            pass
+        _car_image_memo.clear()
+        car_image.clear_cache()
+    return pkg
+
+
 @app.get("/api/car-picture")
 async def car_picture(refresh: int = 0):
     """Serve the owner's vehicle image — composed LIVE from the per-vehicle layer package to reflect
@@ -5927,7 +5941,7 @@ async def car_picture(refresh: int = 0):
     if pkg is None:
         fresh_pkg = None
         if refresh or time.monotonic() >= _car_pic_retry_after:      # see _CAR_PIC_RETRY_S above
-            fresh_pkg = await asyncio.get_event_loop().run_in_executor(None, command_client.get_car_picture_package)
+            fresh_pkg = await asyncio.get_event_loop().run_in_executor(None, _download_car_picture_package, pkg_path)
             _car_pic_retry_after = 0.0 if fresh_pkg else time.monotonic() + _CAR_PIC_RETRY_S
         if want_fresh:
             # Attempted the once-per-boot refresh (success or not) → don't re-poll a down cloud on
@@ -5935,13 +5949,6 @@ async def car_picture(refresh: int = 0):
             _car_pic_boot_refresh = False
         if fresh_pkg:
             pkg = fresh_pkg
-            try:
-                with open(pkg_path, "wb") as f:
-                    f.write(pkg)
-            except OSError:
-                pass
-            _car_image_memo.clear()
-            car_image.clear_cache()
         elif want_fresh and os.path.exists(pkg_path):
             # Forced/boot refresh but the cloud is unreachable → keep the cached image, don't go blank.
             try:
