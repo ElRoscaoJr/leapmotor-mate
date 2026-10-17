@@ -5919,13 +5919,14 @@ def _download_car_picture_package(pkg_path: str) -> bytes | None:
 
 
 @app.get("/api/car-picture")
-async def car_picture(refresh: int = 0):
+async def car_picture(refresh: int = 0, still: int = 0):
     """Serve the owner's vehicle image — composed LIVE from the per-vehicle layer package to reflect
     the current state (charge cable, charging animation, trunk), like the official app. The package
     ZIP is cached to disk; a manual ?refresh=1 OR the first request after each restart re-downloads it,
     so a colour changed on the car gets picked up (#143) — the latter alongside, when there is a copy to
     show. Falls back to the cached package, then its static render, then the legacy PNG, on any
-    problem — so the Overview never breaks."""
+    problem — so the Overview never breaks. ?still=1 leaves out the charging animation, which takes
+    seconds to compose, so the page has a picture meanwhile."""
     global _car_pic_boot_refresh, _car_pic_retry_after
     import asyncio
     pkg_path = _car_picture_pkg_path()
@@ -5969,6 +5970,8 @@ async def car_picture(refresh: int = 0):
         return Response(status_code=404)
 
     status = db_reader.get_latest_status() or {}
+    if still and status.get("charging"):
+        status = {**status, "charging": False, "cable_connected": True}    # the cable without its animation
     # The VIN is part of the key, not decoration: two cars parked with everything shut share a body
     # state, so a memo keyed on the state alone served the second car the first one's picture.
     # The package is in it too: a picture composed from the old one while a new one arrives must not stay.
