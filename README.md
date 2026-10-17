@@ -1,7 +1,7 @@
 # LeapMotor Mate
 
-**v4.15.4:** with the outside temperature switched on, a parked car whose GPS the cloud sends as zero **keeps its outside temperature**: Mate asks about its last known position while the odometer has not changed. In **4.15.3**: the wallbox's line on a charge's chart is drawn from readings Mate keeps ([#419](https://github.com/ProtossBlaster/leapmotor-mate/pull/419), @arekm).
-See [release notes and upgrade impact](docs/releases/v4.15.4.md).
+**v4.15.5:** the Battery health page **keeps the views you picked** through its own reload, in its address ([#426](https://github.com/ProtossBlaster/leapmotor-mate/pull/426), @arekm); the chart of a charge in progress is **redrawn without a blink** ([#422](https://github.com/ProtossBlaster/leapmotor-mate/pull/422), @arekm); a restart **keeps the outside temperature** the car had when Open-Meteo refuses the first lookup ([#425](https://github.com/ProtossBlaster/leapmotor-mate/pull/425), @arekm). In **4.15.4**: a parked car whose GPS the cloud sends as zero keeps its outside temperature.
+See [release notes and upgrade impact](docs/releases/v4.15.5.md).
 
 [![CI](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/ci.yml/badge.svg)](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/ci.yml)
 [![Docker](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/ProtossBlaster/leapmotor-mate/actions/workflows/docker-publish.yml)
@@ -360,8 +360,8 @@ Works with any MQTT broker (e.g. the Mosquitto add‑on). Use **Test connection*
 
 # LeapMotor Mate · Italiano
 
-**v4.15.4:** con la temperatura esterna attiva, un'auto ferma di cui il cloud manda il GPS a zero **mantiene la temperatura esterna**: Mate chiede il meteo nella sua ultima posizione nota finché il contachilometri non cambia. Nella **4.15.3**: la linea della wallbox nel grafico di una ricarica è tracciata dalle letture che Mate conserva ([#419](https://github.com/ProtossBlaster/leapmotor-mate/pull/419), @arekm).
-Vedi [note di rilascio e impatto dell'aggiornamento](docs/releases/v4.15.4.md#italiano).
+**v4.15.5:** la pagina Salute batteria **tiene le viste scelte** anche quando si ricarica da sola, nel suo indirizzo ([#426](https://github.com/ProtossBlaster/leapmotor-mate/pull/426), @arekm); il grafico di una ricarica in corso **si ridisegna senza sfarfallare** ([#422](https://github.com/ProtossBlaster/leapmotor-mate/pull/422), @arekm); un riavvio **mantiene la temperatura esterna** che l'auto aveva quando Open-Meteo rifiuta la prima richiesta ([#425](https://github.com/ProtossBlaster/leapmotor-mate/pull/425), @arekm). Nella **4.15.4**: un'auto ferma di cui il cloud manda il GPS a zero mantiene la temperatura esterna.
+Vedi [note di rilascio e impatto dell'aggiornamento](docs/releases/v4.15.5.md#italiano).
 
 **Tracciamento viaggi, registro ricariche e controllo remoto per veicoli Leapmotor** — un companion self‑hosted (un *TeslaMate* per Leapmotor). Funziona come **add‑on di Home Assistant** o come **container Docker standalone**.
 

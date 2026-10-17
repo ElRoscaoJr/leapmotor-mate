@@ -1,8 +1,22 @@
 # LeapMotor Mate — Manual de usuario
 
-> **Versión de Mate:** v4.15.4 · **Idioma:** Español
+> **Versión de Mate:** v4.15.5 · **Idioma:** Español
 
-## Novedades de la versión 4.15.4
+## Novedades de la versión 4.15.5
+
+**Salud de la batería conserva tus vistas.** La página sigue actualizándose sola cuando queda abierta, y
+ahora las vistas elegidas en sus dos gráficos (*Distancia*, *% perdido*, *por fecha*) vuelven con ella:
+se guardan en la dirección de la página, como un calendario guarda su mes.
+
+**El gráfico de una carga en curso ya no parpadea.** En cada actualización, cada 30 segundos, la
+tarjeta se quedaba un instante sin gráfico y la página de debajo saltaba; ahora el gráfico nuevo ocupa
+el lugar del anterior.
+
+**La temperatura exterior tras un reinicio.** Cuando Open-Meteo rechaza la primera consulta tras
+reiniciar Mate, Mate conserva la lectura de la última posición del coche, si tiene menos de 20 minutos,
+en lugar de quedarse hasta 20 minutos sin ella.
+
+### Novedades de la versión 4.15.4
 
 **La temperatura exterior sin GPS.** Cuando la nube no envía la posición GPS de un coche parado,
 Mate consulta la temperatura exterior en la última posición conocida del coche, siempre que el

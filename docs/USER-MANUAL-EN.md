@@ -1,8 +1,22 @@
 # LeapMotor Mate — User Manual
 
-> **Mate version:** v4.15.4 · **Language:** English
+> **Mate version:** v4.15.5 · **Language:** English
 
-## New in 4.15.4
+## New in 4.15.5
+
+**The Battery health page keeps your views.** The page still refreshes itself when left open, and now
+the views picked on its two charts (*Distance*, *% lost*, *per date*) come back with it: they are kept in
+the page's address, as a calendar keeps its month.
+
+**The chart of a charge in progress no longer blinks.** At every update, every 30 seconds, the card
+showed for a moment without its chart and the page under it jumped; the new chart now takes the old
+one's place.
+
+**The outside temperature after a restart.** When Open-Meteo refuses the first lookup after Mate
+restarts, Mate keeps the reading of the car's last position, if it is less than 20 minutes old, instead
+of going up to 20 minutes without one.
+
+### New in 4.15.4
 
 **The outside temperature without GPS.** When the cloud sends no GPS position for a parked car, Mate
 looks the outside temperature up at the car's last known position, as long as the odometer has not

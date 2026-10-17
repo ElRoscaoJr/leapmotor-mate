@@ -1,8 +1,22 @@
 # LeapMotor Mate — Benutzerhandbuch
 
-> **Mate-Version:** v4.15.4 · **Sprache:** Deutsch
+> **Mate-Version:** v4.15.5 · **Sprache:** Deutsch
 
-## Neu in Version 4.15.4
+## Neu in Version 4.15.5
+
+**Batteriezustand behält Ihre Ansichten.** Die Seite aktualisiert sich weiterhin selbst, wenn sie offen
+bleibt, und jetzt kommen die auf ihren beiden Diagrammen gewählten Ansichten (*Distanz*, *% verloren*,
+*pro Datum*) mit ihr zurück: Sie stehen in der Adresse der Seite, so wie ein Kalender seinen Monat hält.
+
+**Das Diagramm eines laufenden Ladevorgangs flackert nicht mehr.** Bei jeder Aktualisierung, alle
+30 Sekunden, war die Karte kurz ohne Diagramm und die Seite darunter sprang; jetzt nimmt das neue
+Diagramm den Platz des alten ein.
+
+**Die Außentemperatur nach einem Neustart.** Lehnt Open-Meteo die erste Abfrage nach einem Neustart von
+Mate ab, behält Mate den Wert der letzten Position des Autos, wenn er jünger als 20 Minuten ist, statt
+bis zu 20 Minuten ohne Wert zu bleiben.
+
+### Neu in Version 4.15.4
 
 **Die Außentemperatur ohne GPS.** Sendet die Cloud für ein stehendes Auto keine GPS-Position, fragt
 Mate die Außentemperatur an der letzten bekannten Position des Autos ab, solange sich der
