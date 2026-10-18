@@ -1,8 +1,19 @@
 # LeapMotor Mate — Manuale utente
 
-> **Versione di Mate:** v4.15.5 · **Lingua:** Italiano
+> **Versione di Mate:** v4.15.6 · **Lingua:** Italiano
 
-## Novità della 4.15.5
+## Novità della 4.15.6
+
+**Il sensore MQTT della presa segue il cavo.** Con MQTT attivo, il sensore *Plug Connected* (e
+`evcc/plugged` per EVCC) ora è acceso ogni volta che la Panoramica mostra il cavo: anche dopo che una
+ricarica è finita, o mentre una ricarica aspetta la sua programmazione, con il cavo ancora dentro. Finora
+seguiva solo la sessione di ricarica, e si spegneva con il cavo ancora inserito.
+
+**La foto dell'auto compare subito.** Mentre l'auto carica, la Panoramica mostra subito l'auto con il
+cavo e mette al suo posto l'animazione della ricarica quando è pronta, invece di una scheda vuota per
+qualche secondo. Dopo un riavvio di Mate anche la prima foto non aspetta più un download.
+
+### Novità della 4.15.5
 
 **La pagina Salute batteria tiene le tue viste.** La pagina si aggiorna ancora da sola quando resta
 aperta, e ora le viste scelte nei suoi due grafici (*Distanza*, *% perso*, *per data*) tornano con lei:

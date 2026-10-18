@@ -1,8 +1,20 @@
 # LeapMotor Mate — Manuel utilisateur
 
-> **Version de Mate :** v4.15.5 · **Langue :** Français
+> **Version de Mate :** v4.15.6 · **Langue :** Français
 
-## Nouveautés de la version 4.15.5
+## Nouveautés de la version 4.15.6
+
+**Le capteur MQTT de la prise suit le câble.** Avec MQTT activé, le capteur *Plug Connected* (et
+`evcc/plugged` pour EVCC) est désormais allumé chaque fois que l'Aperçu montre le câble : aussi après
+la fin d'une recharge, ou pendant qu'une recharge attend sa programmation, le câble encore branché.
+Jusqu'ici il suivait seulement la session de recharge, et s'éteignait le câble encore branché.
+
+**L'image de la voiture s'affiche tout de suite.** Pendant la recharge, l'Aperçu montre tout de suite la
+voiture avec son câble et met l'animation de recharge à sa place dès qu'elle est prête, au lieu d'une
+carte vide pendant quelques secondes. Après un redémarrage de Mate, la première image n'attend plus un
+téléchargement non plus.
+
+### Nouveautés de la version 4.15.5
 
 **Santé de la batterie garde vos vues.** La page se met toujours à jour toute seule quand elle reste
 ouverte, et désormais les vues choisies sur ses deux graphiques (*Distance*, *% perdu*, *par date*)

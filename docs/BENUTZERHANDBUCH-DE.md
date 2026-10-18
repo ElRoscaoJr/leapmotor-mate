@@ -1,8 +1,19 @@
 # LeapMotor Mate — Benutzerhandbuch
 
-> **Mate-Version:** v4.15.5 · **Sprache:** Deutsch
+> **Mate-Version:** v4.15.6 · **Sprache:** Deutsch
 
-## Neu in Version 4.15.5
+## Neu in Version 4.15.6
+
+**Der MQTT-Stecker-Sensor folgt dem Kabel.** Mit MQTT ist der Sensor *Plug Connected* (und für EVCC
+`evcc/plugged`) jetzt immer dann an, wenn die Übersicht das Kabel zeigt: auch nach einem beendeten
+Ladevorgang oder während ein Ladevorgang auf seinen Zeitplan wartet, mit dem Kabel noch eingesteckt.
+Bisher folgte er nur der Ladesitzung und ging bei noch eingestecktem Kabel aus.
+
+**Das Fahrzeugbild erscheint sofort.** Während das Auto lädt, zeigt die Übersicht sofort das Auto mit
+seinem Kabel und setzt die Ladeanimation ein, sobald sie bereit ist, statt einige Sekunden eine leere
+Karte. Nach einem Neustart von Mate wartet auch das erste Bild nicht mehr auf einen Download.
+
+### Neu in Version 4.15.5
 
 **Batteriezustand behält Ihre Ansichten.** Die Seite aktualisiert sich weiterhin selbst, wenn sie offen
 bleibt, und jetzt kommen die auf ihren beiden Diagrammen gewählten Ansichten (*Distanz*, *% verloren*,

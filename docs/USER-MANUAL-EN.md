@@ -1,8 +1,19 @@
 # LeapMotor Mate — User Manual
 
-> **Mate version:** v4.15.5 · **Language:** English
+> **Mate version:** v4.15.6 · **Language:** English
 
-## New in 4.15.5
+## New in 4.15.6
+
+**The MQTT plug sensor follows the cable.** With MQTT on, the *Plug Connected* sensor (and EVCC's
+`evcc/plugged`) is now on whenever the Overview shows the cable: also after a charge has finished, or
+while a charge waits for its schedule, with the cable still in. Until now it followed only the charge
+session, and went off while the cable was still in.
+
+**The car picture shows at once.** While the car charges, the Overview shows the car with its cable in
+straight away and swaps in the charging animation once it is ready, instead of an empty card for a few
+seconds. After a restart of Mate the first picture no longer waits for a download either.
+
+### New in 4.15.5
 
 **The Battery health page keeps your views.** The page still refreshes itself when left open, and now
 the views picked on its two charts (*Distance*, *% lost*, *per date*) come back with it: they are kept in
