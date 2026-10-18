@@ -15,6 +15,7 @@ from typing import Optional
 from api_backend import LeapmotorApiClient
 
 import capability_profile
+from events import cable_in_port
 
 log = logging.getLogger(__name__)
 
@@ -113,6 +114,12 @@ class VehicleData:
     # Kept apart from plug_connected because the two answer different questions: the Overview and
     # the MQTT sensor want "is the cable in", the session machinery wants "is a charge running".
     charge_deferred: bool = False
+
+    @property
+    def cable_connected(self) -> bool:
+        """The cable in the port, as the pages and the events read it — not `plug_connected`, which is
+        the charge session the poller opens and closes charges on (#429)."""
+        return cable_in_port(self.plug_connected, self.ac_port_mode, self.gear, self.speed_kmh)
 
     @property
     def v2l_active(self) -> bool:
