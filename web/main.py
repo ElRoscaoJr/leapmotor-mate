@@ -5903,16 +5903,37 @@ _CAR_PIC_RETRY_S = 600.0
 _car_pic_retry_after = 0.0
 
 
+def _download_car_picture_package(pkg_path: str) -> bytes | None:
+    """The package fresh from the cloud, written over the copy on disk; None when the cloud gave none."""
+    pkg = command_client.get_car_picture_package()
+    if pkg:
+        try:
+            with open(pkg_path + ".tmp", "wb") as f:
+                f.write(pkg)
+            os.replace(pkg_path + ".tmp", pkg_path)     # a request reading it meanwhile gets a whole file
+        except OSError:
+            pass
+        _car_image_memo.clear()
+        car_image.clear_cache()
+    return pkg
+
+
 @app.get("/api/car-picture")
-async def car_picture(refresh: int = 0):
+async def car_picture(refresh: int = 0, still: int = 0):
     """Serve the owner's vehicle image — composed LIVE from the per-vehicle layer package to reflect
     the current state (charge cable, charging animation, trunk), like the official app. The package
     ZIP is cached to disk; a manual ?refresh=1 OR the first request after each restart re-downloads it,
-    so a colour changed on the car gets picked up (#143). Falls back to the cached package, then its
-    static render, then the legacy PNG, on any problem — so the Overview never breaks."""
+    so a colour changed on the car gets picked up (#143) — the latter alongside, when there is a copy to
+    show. Falls back to the cached package, then its static render, then the legacy PNG, on any
+    problem — so the Overview never breaks. ?still=1 leaves out the charging animation, which takes
+    seconds to compose, so the page has a picture meanwhile."""
     global _car_pic_boot_refresh, _car_pic_retry_after
     import asyncio
     pkg_path = _car_picture_pkg_path()
+    if _car_pic_boot_refresh and not refresh and os.path.exists(pkg_path):
+        # With a package on disk the boot refresh runs alongside: the picture shows now, a new colour on a later load.
+        _car_pic_boot_refresh = False
+        asyncio.get_event_loop().run_in_executor(None, _download_car_picture_package, pkg_path)
     # Re-download from the cloud on a manual ?refresh=1, OR once after each (re)start (#143 — the car's
     # colour may have changed since the package was first cached). Every other request serves the disk
     # cache, so this is NOT a continuous refresh: at most one cloud fetch per boot.
@@ -5927,7 +5948,7 @@ async def car_picture(refresh: int = 0):
     if pkg is None:
         fresh_pkg = None
         if refresh or time.monotonic() >= _car_pic_retry_after:      # see _CAR_PIC_RETRY_S above
-            fresh_pkg = await asyncio.get_event_loop().run_in_executor(None, command_client.get_car_picture_package)
+            fresh_pkg = await asyncio.get_event_loop().run_in_executor(None, _download_car_picture_package, pkg_path)
             _car_pic_retry_after = 0.0 if fresh_pkg else time.monotonic() + _CAR_PIC_RETRY_S
         if want_fresh:
             # Attempted the once-per-boot refresh (success or not) → don't re-poll a down cloud on
@@ -5935,13 +5956,6 @@ async def car_picture(refresh: int = 0):
             _car_pic_boot_refresh = False
         if fresh_pkg:
             pkg = fresh_pkg
-            try:
-                with open(pkg_path, "wb") as f:
-                    f.write(pkg)
-            except OSError:
-                pass
-            _car_image_memo.clear()
-            car_image.clear_cache()
         elif want_fresh and os.path.exists(pkg_path):
             # Forced/boot refresh but the cloud is unreachable → keep the cached image, don't go blank.
             try:
@@ -5956,9 +5970,12 @@ async def car_picture(refresh: int = 0):
         return Response(status_code=404)
 
     status = db_reader.get_latest_status() or {}
+    if still and status.get("charging"):
+        status = {**status, "charging": False, "cable_connected": True}    # the cable without its animation
     # The VIN is part of the key, not decoration: two cars parked with everything shut share a body
     # state, so a memo keyed on the state alone served the second car the first one's picture.
-    sig = (_selected_vin_for_assets(),) + tuple(bool(status.get(k)) for k in (
+    # The package is in it too: a picture composed from the old one while a new one arrives must not stay.
+    sig = (_selected_vin_for_assets(), len(pkg), hash(pkg)) + tuple(bool(status.get(k)) for k in (
         "cable_connected", "charging", "trunk_open",
         "door_driver_open", "door_passenger_open", "door_rear_left_open", "door_rear_right_open",
         "window_fl_open", "window_rl_open"))

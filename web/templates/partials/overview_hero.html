@@ -90,7 +90,10 @@
                              status.door_driver_open, status.door_passenger_open,
                              status.door_rear_left_open, status.door_rear_right_open,
                              status.window_fl_open, status.window_rl_open] | join('-')) if status else '' %}
-    <img src="api/car-picture?v={{ car_img_token }}" alt="{{ vehicle.car_type if vehicle else 'Vehicle' }}"
+    {# While charging, the still picture first: the animation takes seconds to compose (the page swaps it in). #}
+    {% set car_img = 'api/car-picture?v=' ~ car_img_token %}
+    <img src="{{ car_img ~ '&still=1' if status and status.charging else car_img }}"
+         {% if status and status.charging %}data-live="{{ car_img }}"{% endif %} alt="{{ vehicle.car_type if vehicle else 'Vehicle' }}"
          class="max-h-48 w-full object-contain"
          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
     <div class="hidden flex-col items-center justify-center text-slate-600" style="height:12rem">
